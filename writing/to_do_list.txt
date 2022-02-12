@@ -1,6 +1,7 @@
 For Adam: 
-[] Organize articles from PMC mailing list on Wagner group
-[] Find articles about Russian PMCs
+[X] Organize articles from PMC mailing list on Wagner group
+[X] Find articles about Russian PMCs
+[] Make annotated bib of Wagner journal articles
 
 For Matt:
 [] How is Wagner different Blackwater?
