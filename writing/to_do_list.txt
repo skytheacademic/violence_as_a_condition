@@ -1,11 +1,11 @@
 For Adam: 
 [X] Organize articles from PMC mailing list on Wagner group
 [X] Find articles about Russian PMCs
-[] Make annotated bib of Wagner journal articles
+[X] Make annotated bib of Wagner journal articles
 
 For Matt:
 [X] How is Wagner different from Blackwater?
-[] Make annotated bib on policy memos
+[X] Make annotated bib on policy memos
 [] Email old dissertation supervisor
 
 General to-do list:
