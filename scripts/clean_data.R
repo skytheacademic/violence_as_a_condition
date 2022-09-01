@@ -14,7 +14,8 @@ d =
   d %>%
   rowwise() %>%
   mutate(t_ind = +any(str_detect(across(.cols = everything()), 
-                                  regex("Wagner", ignore_case = TRUE))))
+                                  regex("Wagner", ignore_case = TRUE)))) %>%
+  as.data.frame()
 d$event_date = dmy(d$event_date)
 
 # make IV of death
@@ -41,5 +42,28 @@ d$vac[d$event_type == "Violence against civilians"] = 1
 table(d$admin3)
 
 # expand the data to cover all time periods #
-min(d$event_date[d$t_ind == 1])
-table(d[d$event_date > "2018-04-07"])
+min(d$event_date[d$t_ind == 1]) # establish first time period to receive "treatment"
+# "2018-04-08"
+d = subset(d, d$event_date > "2018-04-07") # subset to all data after 2018-04-07
+range(d$event_date) # verify it worked
+
+# group by admin3 and treatment, then left_join(date,d, by = "date")
+table(d$event_date)
+d.ag = d %>%
+  group_by(admin3, event_date, t_ind) %>%
+  summarize(death = (death), fatalities = sum(fatalities), battle = sum(battle),
+            remote = sum(remote), protest = sum(protest), riot = sum(riot), 
+            str_d = sum(str_d), vac = sum(vac))
+###### need to verify that this^^^ worked correctly #######
+
+
+
+# this could be missing days when Wagner committed violence but another violent event happened 
+# that wasn't "treated". Need to solve later
+
+
+date = seq.Date(from = as.Date("2018-04-08"), to = as.Date("2022-08-10"), by = 1) %>%
+  as.data.frame()
+names(date)[1] = "date" # rename for merging
+
+a = full_join(d, date, by = c("event_date" = "date")) 
