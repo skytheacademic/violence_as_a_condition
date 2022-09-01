@@ -1,36 +1,45 @@
 # Sky Kunkel #
 # The Wagner Group and Violence: Russia's Re-Entry Into Cold War African Politics #
 # Data Cleaning #
-library(tidyverse)
+library(tidyverse); library(lubridate)
 setwd("../")
 
 # load data #
-d <- read.csv("./data/acled/1900-01-01-2022-06-16-Central_African_Republic.csv") %>%
-  select(-c(data_id, iso, event_id_cnty, event_id_no_cnty, 
+d = read.csv("./data/acled/1900-01-01-2022-09-01-Central_African_Republic.csv") %>%
+  select(-c(iso, event_id_cnty, event_id_no_cnty, 
             region, source, source_scale, timestamp))
-table(d$actor1)
-table(d$actor2)
-table(d$assoc_actor_1)
-table(d$assoc_actor_2)
+
+# create treatment, marking when Wagner was present for DV
+d = 
+  d %>%
+  rowwise() %>%
+  mutate(t_ind = +any(str_detect(across(.cols = everything()), 
+                                  regex("Wagner", ignore_case = TRUE))))
+d$event_date = dmy(d$event_date)
+
+# make IV of death
+d$death = 0
+d$death[d$fatalities > 0] = 1
+table(d$death)
 
 
-dd = subset(d, actor1 == "Wagner Group" | actor2 == "Wagner Group" | 
-             assoc_actor_1 == "Wagner Group" | assoc_actor_2 == "Wagner Group")
+# make IVs of types of violence
+table(d$event_type)
+d$battle = 0
+d$battle[d$event_type == "Battles"] = 1
+d$remote = 0
+d$remote[d$event_type == "Explosions/Remote violence"] = 1
+d$protest = 0
+d$protest[d$event_type == "Protests"] = 1
+d$riot = 0
+d$riot[d$event_type == "Riots"] = 1
+d$str_d = 0
+d$str_d[d$sub_event_type == "Arrests" | d$sub_event_type == "Looting/property destruction"] = 1
+d$vac = 0
+d$vac[d$event_type == "Violence against civilians"] = 1
 
-a = str_detect(d$notes, regex("Wagner", ignore_case = TRUE))
-a = data.frame(a)
-a = cbind(d, a)
-a = subset(a, a == "TRUE") %>%
-  select(-c("a"))
+table(d$admin3)
 
-aa = subset(a, actor1 != "Wagner Group" & actor2 != "Wagner Group" & 
-              assoc_actor_1 != "Wagner Group" & assoc_actor_2 != "Wagner Group")
-
-b = str_detect(d$notes, regex("Wagner", ignore_case = TRUE))
-
-
-# IMPORTANT #
-### Eventually will need to find a way to distinguish these; ignore for now ###
-
-
-df = subset(d, d$actor1 == "Wagner Group")
+# expand the data to cover all time periods #
+min(d$event_date[d$t_ind == 1])
+table(d[d$event_date > "2018-04-07"])
