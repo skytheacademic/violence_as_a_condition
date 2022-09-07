@@ -47,6 +47,14 @@ min(d$event_date[d$t_ind == 1]) # establish first time period to receive "treatm
 d = subset(d, d$event_date > "2018-04-07") # subset to all data after 2018-04-07
 range(d$event_date) # verify it worked
 
+# group only by admin to see which units were ever treated
+d.ag.test = d %>%
+  group_by(admin3) %>%
+  summarize(t_ind = sum(t_ind))
+d.ag.test$t_ind[d.ag.test$t_ind>0] = 1
+table(d.ag.test$t_ind)
+# we have 46 adm3 where Wagner was never present, and 96 where they were
+
 # group by admin3 and treatment, then left_join(date,d, by = "date")
 table(d$event_date)
 d.ag = d %>%
