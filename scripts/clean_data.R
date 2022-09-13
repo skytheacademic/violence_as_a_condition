@@ -3,6 +3,7 @@
 # Data Cleaning #
 library(tidyverse); library(lubridate)
 setwd("../")
+options(scipen = 999) # turn off scientific notation
 
 # load data #
 d = read.csv("./data/acled/1900-01-01-2022-09-01-Central_African_Republic.csv") %>%
@@ -10,13 +11,14 @@ d = read.csv("./data/acled/1900-01-01-2022-09-01-Central_African_Republic.csv") 
             region, source, source_scale, timestamp))
 
 # create treatment, marking when Wagner was present for DV
-d = 
-  d %>%
+d = d %>%
   rowwise() %>%
   mutate(t_ind = +any(str_detect(across(.cols = everything()), 
                                   regex("Wagner", ignore_case = TRUE)))) %>%
   as.data.frame()
-d$event_date = dmy(d$event_date)
+
+# change date to date-time object
+d$event_date = dmy(d$event_date) 
 
 # make IV of death
 d$death = 0
@@ -39,13 +41,29 @@ d$str_d[d$sub_event_type == "Arrests" | d$sub_event_type == "Looting/property de
 d$vac = 0
 d$vac[d$event_type == "Violence against civilians"] = 1
 
-table(d$admin3)
-
 # expand the data to cover all time periods #
 min(d$event_date[d$t_ind == 1]) # establish first time period to receive "treatment"
 # "2018-04-08"
 d = subset(d, d$event_date > "2018-04-07") # subset to all data after 2018-04-07
 range(d$event_date) # verify it worked
+
+# make the instrument
+table(d$t_ind[d$event_date> "2021-11-01"])
+d$iv = 0
+d$iv[d$event_date> "2021-11-01"] = 1
+
+
+first.stage.1 = lm(t_ind ~ iv, data = d)
+instrumented.trt = first.stage.1$fitted # Generate fitted values
+reg1 <- lm(d$death ~ instrumented.trt) # Second stage
+summary(reg1)
+reg2 <- lm(d$fatalities ~ instrumented.trt) # Second stage
+summary(reg2)
+
+
+
+
+
 
 # group only by admin to see which units were ever treated
 d.ag.test = d %>%
