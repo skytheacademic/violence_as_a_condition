@@ -46,7 +46,7 @@ d$vac[d$event_type == "Violence against civilians"] = 1
 # expand the data to cover all time periods #
 min(d$event_date[d$t_ind == 1]) # establish first time period to receive "treatment"
 # "2018-04-08"
-d = subset(d, d$event_date > "2018-04-07") # subset to all data after 2018-04-07
+d = subset(d, d$event_date > "2018-04-08") # subset to all data after 2018-04-07
 range(d$event_date) # verify it worked
 
 
