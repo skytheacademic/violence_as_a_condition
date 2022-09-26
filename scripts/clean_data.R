@@ -1,6 +1,5 @@
 # Sky Kunkel #
-# The Wagner Group and Violence: Russia's Re-Entry Into Cold War African Politics #
-# Data Cleaning #
+# Violence as a Condition: Cleaning Data #
 library(tidyverse); library(lubridate)
 library(rdrobust); library(rdd)
 setwd("../")
@@ -56,7 +55,12 @@ table(d$t_ind[d$event_date> "2021-11-01"])
 d$iv = 0
 d$iv[d$event_date> "2021-11-01"] = 1
 
+#### Export Data ####
+write.csv(d, "./data/Kunkel-Ellis-final.csv", row.names=FALSE)
 
+
+
+#### Analyze Data ####
 first.stage.1 = lm(t_ind ~ iv, data = d)
 instrumented.trt = first.stage.1$fitted # Generate fitted values
 reg1 <- lm(d$death ~ instrumented.trt) # Second stage
