@@ -16,6 +16,7 @@ car3 = st_read(dsn = "./data/humdata/adm3",
                layer = "caf_admbnda_adm3_200k_sigcaf_reach_itos_v2", 
                stringsAsFactors = F)
 
+# Convert ACLED data to geolocational data
 
 # assign crs system for ACLED data #
 wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
@@ -23,3 +24,17 @@ wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 a.sp <- SpatialPointsDataFrame(a[20:19],         # reading in the dataframe as a spatial object
                                    a,                 # the R object to convert
                                    proj4string = wgs84)   # assign a CRS 
+a$wagner = "State Violence"
+a$wagner[a$t_ind == 1] = "Wagner"
+ggplot() + geom_point(data = a, aes(x = longitude, y = latitude, size = fatalities, colour = wagner))
+
+
+ggplot() + geom_sf(aes(fill = b.join.0$fatalities, geometry = b.join.0$prio_geometry)) +
+  scale_fill_gradient(low = "#ffc4c4", high = "#ff3b3b", space = "Lab", na.value = "grey89",
+                      guide = "colourbar", aesthetics = "fill", limits=c(0,2050)) +
+  geom_sf(aes(geometry = drc_01$geometry), alpha = 0) + 
+  geom_sf(aes(geometry = uga_01$geometry), alpha = 0) +
+  geom_sf(aes(geometry = uga_00$geometry), size = 2, fill = alpha("red",0)) +
+  geom_point(data = b.join.0, aes(x = prio_xcoord, y = prio_ycoord, size=radpko_pko_deployed_any), alpha=0.4, shape = 19, colour = "#5b92e5") +
+  xlim(29.12,31.38) + ylim(0.61,2.88) + theme_void() +
+  theme(plot.margin = unit(c(0,0,0,0), "cm"), legend.position="none")
