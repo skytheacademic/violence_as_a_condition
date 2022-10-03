@@ -2,7 +2,8 @@
 # Sky Kunkel #
 
 #### Set Libraries, read in data ####
-library(tidyverse); library(sp)
+library(tidyverse); library(sp); library(ggstream); library(lubridate)
+
 # read in data
 setwd("../")
 a = read.csv("./data/Kunkel-Ellis-final.csv")
@@ -38,3 +39,39 @@ ggplot() + geom_sf(aes(fill = b.join.0$fatalities, geometry = b.join.0$prio_geom
   geom_point(data = b.join.0, aes(x = prio_xcoord, y = prio_ycoord, size=radpko_pko_deployed_any), alpha=0.4, shape = 19, colour = "#5b92e5") +
   xlim(29.12,31.38) + ylim(0.61,2.88) + theme_void() +
   theme(plot.margin = unit(c(0,0,0,0), "cm"), legend.position="none")
+
+
+#### Plot violence severity by treatment over time ####
+d = a
+d$event_date = ymd(d$event_date)
+d$event_date <- floor_date(d$event_date, "month")
+d = subset(d, d$event_date > "2020-12-01")
+d = d %>%
+  group_by(event_date, wagner) %>%
+  summarize(death = mean(death), fatalities = sum(fatalities)) %>%
+  as.data.frame()
+d$event_date = ymd(d$event_date)
+
+ggplot(d, aes(x = event_date, y = fatalities, fill = wagner)) +
+  geom_stream(type = "ridge")
+ggplot(d) +
+  geom_line(aes(x = event_date, y = fatalities, color = wagner))
+
+plot(d$wagner, d$event_date)
+
+#### Plot of Violent Events over time by event type ####
+d = a
+d$event_date = ymd(d$event_date)
+d$event_date <- floor_date(d$event_date, "month")
+d = subset(d, event_type == "Battles" | event_type == "Violence against civilians")
+d = d %>%
+  group_by(event_date, event_type) %>%
+  summarize(death = mean(death), fatalities = sum(fatalities)) %>%
+  as.data.frame()
+d$event_date = ymd(d$event_date)
+
+ggplot(d, aes(x = event_date, y = fatalities, fill = event_type)) +
+  geom_stream(type = "ridge")
+ggplot(d) +
+  geom_line(aes(x = event_date, y = fatalities, color = wagner))
+
