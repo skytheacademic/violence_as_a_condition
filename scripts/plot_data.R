@@ -3,19 +3,43 @@
 
 #### Set Libraries, read in data ####
 library(tidyverse); library(sp); library(ggstream); library(lubridate)
-
+library(sf); library(tmap); library(tmaptools)
 # read in data
 setwd("../")
 a = read.csv("./data/Kunkel-Ellis-final.csv")
-car0 = st_read(dsn = "./data/humdata/adm0", 
-              layer = "caf_admbnda_adm0_200k_sigcaf_reach_itos_v2", 
+
+#### Read in map data ####
+car0 = st_read(dsn = "./data/gadm/caf", 
+              layer = "gadm40_CAF_0", 
               stringsAsFactors = F)
-car2 = st_read(dsn = "./data/humdata/adm2", 
-               layer = "caf_admbnda_adm2_200k_sigcaf_reach_itos_v2", 
+car1 = st_read(dsn = "./data/gadm/caf", 
+               layer = "gadm40_CAF_1", 
                stringsAsFactors = F)
-car3 = st_read(dsn = "./data/humdata/adm3", 
-               layer = "caf_admbnda_adm3_200k_sigcaf_reach_itos_v2", 
+car2 = st_read(dsn = "./data/gadm/caf", 
+               layer = "gadm40_CAF_2", 
                stringsAsFactors = F)
+
+# chd0 = st_read(dsn = "./data/gadm/chd", 
+#                layer = "gadm41_TCD_0", 
+#                stringsAsFactors = F)
+# cmr0 = st_read(dsn = "./data/gadm/cmr", 
+#                layer = "gadm41_CMR_0", 
+#                stringsAsFactors = F)
+# cog0 = st_read(dsn = "./data/gadm/congo", 
+#                layer = "gadm40_COG_0", 
+#                stringsAsFactors = F)
+# drc0 = st_read(dsn = "./data/gadm/drc", 
+#                layer = "gadm40_COD_0", 
+#                stringsAsFactors = F)
+# ssd0 = st_read(dsn = "./data/gadm/ssd", 
+#                layer = "gadm40_SSD_0", 
+#                stringsAsFactors = F)
+# sdn0 = st_read(dsn = "./data/gadm/sdn", 
+#                layer = "gadm41_SDN_0", 
+#                stringsAsFactors = F)
+
+a$wagner = "State Violence"
+a$wagner[a$t_ind == 1] = "Wagner"
 
 # Convert ACLED data to geolocational data
 
@@ -25,20 +49,36 @@ wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 a.sp <- SpatialPointsDataFrame(a[20:19],         # reading in the dataframe as a spatial object
                                    a,                 # the R object to convert
                                    proj4string = wgs84)   # assign a CRS 
-a$wagner = "State Violence"
-a$wagner[a$t_ind == 1] = "Wagner"
-ggplot() + geom_point(data = a, aes(x = longitude, y = latitude, size = fatalities, colour = wagner))
+bbox_car <- st_bbox(car0)  #current bounding box
 
+ggplot() + 
+  geom_point(data = a, aes(x = longitude, y = latitude, size = fatalities, colour = wagner)) +
+  geom_sf(aes(geometry = car2$geometry), alpha = 0) +
+  geom_sf(aes(geometry = car0$geometry), alpha = 0) +
+  xlim(bbox_car[1], bbox_car[3]) + ylim(bbox_car[2], bbox_car[4]) + theme_void() +
+  theme(plot.margin = unit(c(0,0,0,0), "cm"))
 
-ggplot() + geom_sf(aes(fill = b.join.0$fatalities, geometry = b.join.0$prio_geometry)) +
-  scale_fill_gradient(low = "#ffc4c4", high = "#ff3b3b", space = "Lab", na.value = "grey89",
-                      guide = "colourbar", aesthetics = "fill", limits=c(0,2050)) +
-  geom_sf(aes(geometry = drc_01$geometry), alpha = 0) + 
-  geom_sf(aes(geometry = uga_01$geometry), alpha = 0) +
-  geom_sf(aes(geometry = uga_00$geometry), size = 2, fill = alpha("red",0)) +
-  geom_point(data = b.join.0, aes(x = prio_xcoord, y = prio_ycoord, size=radpko_pko_deployed_any), alpha=0.4, shape = 19, colour = "#5b92e5") +
-  xlim(29.12,31.38) + ylim(0.61,2.88) + theme_void() +
-  theme(plot.margin = unit(c(0,0,0,0), "cm"), legend.position="none")
+a.wg = subset(a, wagner == "Wagner")
+a.st = subset(a, wagner == "State Violence")
+# dsc.1 =
+  ggplot() + geom_sf(aes(geometry = car0$geometry), alpha = 0.3,fill = NA) +
+  geom_point(data = a.wg, aes(x = longitude, y = latitude, size=fatalities, colour = "#e5695b"), alpha=0.4, shape = 19) +
+  geom_point(data = a.st, aes(x = longitude, y = latitude, size=fatalities, colour = "#5b92e5"), alpha=0.5, shape = 19) +
+  scale_fill_viridis_c(option="E") +
+  scale_size(range = c(.1, 20), name="Count", labels = c("20,000", "40,000", "60,000"), breaks = c(20000, 40000,60000)) +
+  theme_void()
+
+dsc =
+  dsc.1 + labs(colour = "Variable") +
+  scale_color_manual(labels = c("PKs Deployed", "Violence"), values = c("#5b92e5", "#e5695b")) +
+  theme(legend.background = element_rect(color = "black"), legend.position = c(0.25, 0.3),
+        plot.margin = unit(c(0,0,0,0), "cm"), legend.margin=margin(c(5,5,5,5)),
+        legend.key.size = unit(0.2, 'cm')) +
+  guides(shape = guide_legend(order = 1),col = guide_legend(order = 2), legend.direction="vertical")
+pdf("./results/violence_car")
+dsc
+dev.off()
+
 
 
 #### Plot violence severity by treatment over time ####
