@@ -7,6 +7,9 @@ library(sf); library(tmap); library(tmaptools)
 # read in data
 setwd("../")
 a = read.csv("./data/Kunkel-Ellis-final.csv")
+a$event_date = ymd(a$event_date)
+a$wagner = "State Violence"
+a$wagner[a$t_ind == 1] = "Wagner"
 
 #### Read in map data ####
 car0 = st_read(dsn = "./data/gadm/caf", 
@@ -38,8 +41,6 @@ car2 = st_read(dsn = "./data/gadm/caf",
 #                layer = "gadm41_SDN_0", 
 #                stringsAsFactors = F)
 
-a$wagner = "State Violence"
-a$wagner[a$t_ind == 1] = "Wagner"
 
 # Convert ACLED data to geolocational data
 
@@ -51,6 +52,8 @@ a.sp <- SpatialPointsDataFrame(a[20:19],         # reading in the dataframe as a
                                    proj4string = wgs84)   # assign a CRS 
 bbox_car <- st_bbox(car0)  #current bounding box
 
+#### Plot of violence by actor in CAR ####
+
 ggplot() + 
   geom_point(data = a, aes(x = longitude, y = latitude, size = fatalities, colour = wagner)) +
   geom_sf(aes(geometry = car2$geometry), alpha = 0) +
@@ -60,22 +63,27 @@ ggplot() +
 
 a.wg = subset(a, wagner == "Wagner")
 a.st = subset(a, wagner == "State Violence")
-# dsc.1 =
+
+a.wg = subset(a, wagner == "Wagner" & event_date >"2020-12-31")
+a.st = subset(a, wagner == "State Violence" & event_date >"2020-12-31")
+dsc.1 =
   ggplot() + geom_sf(aes(geometry = car0$geometry), alpha = 0.3,fill = NA) +
-  geom_point(data = a.wg, aes(x = longitude, y = latitude, size=fatalities, colour = "#e5695b"), alpha=0.4, shape = 19) +
-  geom_point(data = a.st, aes(x = longitude, y = latitude, size=fatalities, colour = "#5b92e5"), alpha=0.5, shape = 19) +
+  geom_sf(aes(geometry = car2$geometry), alpha = 0) +
+  geom_point(data = a.wg, aes(x = longitude, y = latitude, size=fatalities, colour = "#5b92e5"), alpha=0.4, shape = 19) +
+  geom_point(data = a.st, aes(x = longitude, y = latitude, size=fatalities, colour = "#e5695b"), alpha=0.5, shape = 19) +
   scale_fill_viridis_c(option="E") +
-  scale_size(range = c(.1, 20), name="Count", labels = c("20,000", "40,000", "60,000"), breaks = c(20000, 40000,60000)) +
+  scale_size(range = c(.1, 20), name="Fatalities Count", labels = c("0", "25", "50", "75", "100", "125"), 
+             breaks = c(0, 25, 50, 75, 100, 125)) +
   theme_void()
 
-dsc =
+#dsc =
   dsc.1 + labs(colour = "Variable") +
-  scale_color_manual(labels = c("PKs Deployed", "Violence"), values = c("#5b92e5", "#e5695b")) +
-  theme(legend.background = element_rect(color = "black"), legend.position = c(0.25, 0.3),
+  scale_color_manual(labels = c("Wagner", "State Forces"), values = c("#e5695b","#5b92e5")) +
+  theme(legend.background = element_rect(color = "black"), legend.position = c(),
         plot.margin = unit(c(0,0,0,0), "cm"), legend.margin=margin(c(5,5,5,5)),
         legend.key.size = unit(0.2, 'cm')) +
   guides(shape = guide_legend(order = 1),col = guide_legend(order = 2), legend.direction="vertical")
-pdf("./results/violence_car")
+pdf("./results/violence_by_actor.pdf")
 dsc
 dev.off()
 
@@ -115,3 +123,25 @@ ggplot(d, aes(x = event_date, y = fatalities, fill = event_type)) +
 ggplot(d) +
   geom_line(aes(x = event_date, y = fatalities, color = wagner))
 
+
+#### Plot Wagner Violence Severity over time ####
+
+# Aggregate by week #
+a$event_date = ymd(a$event_date)
+a$event_date <- floor_date(a$event_date, "month")
+a = subset(a, wagner == "Wagner")
+d = a %>%
+  group_by(event_date, wagner) %>%
+  summarize(death = mean(death), fatalities = sum(fatalities)) %>%
+  as.data.frame()
+
+# make into plot
+ggplot(d, aes(x = event_date, y = death, fill = wagner)) +
+  geom_stream(type = "ridge")
+ggplot(data = a, mapping = aes(x = event_date, y=fatalities)) + 
+  geom_density(stat = "identity")
+
+a = subset(a, event_type == "Violence against civilians")
+ggplot(a, aes(y=fatalities, group = iv)) + 
+  geom_boxplot(outlier.colour="red", outlier.shape=8,
+               outlier.size=4)
