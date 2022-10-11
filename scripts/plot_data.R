@@ -2,8 +2,9 @@
 # Sky Kunkel #
 
 #### Set Libraries, read in data ####
-library(tidyverse); library(sp); library(ggstream); library(lubridate)
-library(sf); library(tmap); library(tmaptools)
+library(tidyverse); library(sp); library(ggstream); library(lubridate);
+library(sf); library(tmap); library(tmaptools); library(rstatix);
+library(ggpubr)
 # read in data
 setwd("../")
 a = read.csv("./data/Kunkel-Ellis-final.csv")
@@ -125,23 +126,63 @@ ggplot(d) +
 
 
 #### Plot Wagner Violence Severity over time ####
+a = read.csv("./data/Kunkel-Ellis-final.csv")
+a$event_date = ymd(a$event_date)
+a$wagner = "State Violence"
+a$wagner[a$t_ind == 1] = "Wagner"
 
 # Aggregate by week #
-a$event_date = ymd(a$event_date)
 a$event_date <- floor_date(a$event_date, "month")
-a = subset(a, wagner == "Wagner")
+a = subset(a, t_ind == 1)
+a = subset(a, event_type == "Battles" | event_type == "Violence against civilians")
 d = a %>%
-  group_by(event_date, wagner) %>%
-  summarize(death = mean(death), fatalities = sum(fatalities)) %>%
+  group_by(event_date, event_type) %>%
+  summarize(death = mean(death), fatalities = sum(fatalities), event = sum(event)) %>%
   as.data.frame()
 
 # make into plot
-ggplot(d, aes(x = event_date, y = death, fill = wagner)) +
+ggplot(d, aes(x = event_date, y = event, fill = event_type)) +
   geom_stream(type = "ridge")
 ggplot(data = a, mapping = aes(x = event_date, y=fatalities)) + 
   geom_density(stat = "identity")
 
-a = subset(a, event_type == "Violence against civilians")
-ggplot(a, aes(y=fatalities, group = iv)) + 
-  geom_boxplot(outlier.colour="red", outlier.shape=8,
-               outlier.size=4)
+# scatter plot
+a$event = 1
+boxplot(a$iv, a$event)
+
+
+
+## make boxplot by type of violence and treatment ##
+a = read.csv("./data/Kunkel-Ellis-final.csv")
+a$event_date = ymd(a$event_date)
+a$wagner = "State"
+a$wagner[a$t_ind == 1] = "Wagner"
+a$log.f = log(a$fatalities)
+d.ag = a %>%
+  group_by(wagner, iv) %>%
+  summarize(death = mean(death), fatalities = sum(fatalities), battle = sum(battle),
+            remote = sum(remote), protest = sum(protest), riot = sum(riot), 
+            str_d = sum(str_d), vac = sum(vac))
+
+desc = ggboxplot(a, x = "iv", y = "log.f", add = c("jitter"), 
+                 color = "wagner", palette = "lancet")
+
+
+
+pdf("./results/desc.time.pdf")
+ggpar(desc, main = "Violence Before and After Nov. 2021", xlab = "Before (0) / After (1)",
+      ylab = "Log Fatalities", legend.title = "Actor", legend = c(0.5,0.90))
+dev.off()
+
+
+# scatter plot of violence since 2021-11-01
+a$event_date <- floor_date(a$event_date, "week")
+date = rep(ymd("2021-11-01"), nrow(d))
+a$score = date - a$event_date
+a$score = as.numeric(a$score)
+d = a %>%
+  group_by(score, wagner) %>%
+  summarize(death = mean(death), fatalities = sum(fatalities)) %>%
+  as.data.frame()
+
+ggplot(d, aes(x = score, y = fatalities, color = wagner))
