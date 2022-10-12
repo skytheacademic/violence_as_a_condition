@@ -1,7 +1,6 @@
 # Sky Kunkel #
 # Violence as a Condition: Cleaning Data #
 library(tidyverse); library(lubridate)
-library(rdrobust); library(rdd)
 setwd("../")
 options(scipen = 999) # turn off scientific notation
 
@@ -38,12 +37,12 @@ d = subset(d, d$event_date > "2018-04-07") # subset to all data after 2018-04-07
 range(d$event_date) # verify it worked
 
 
-# make IV of death
+# make dependent variable of death
 d$death = 0
 d$death[d$fatalities > 0] = 1
 table(d$death)
 
-# make IVs of types of violence
+# make dependent variables of types of violence
 table(d$event_type)
 d$battle = 0
 d$battle[d$event_type == "Battles"] = 1
@@ -73,16 +72,6 @@ d$iv[d$event_date> "2021-11-01"] = 1
 
 #### Export Data ####
 write.csv(d, "./data/Kunkel-Ellis-final.csv", row.names=FALSE)
-
-
-
-#### Analyze Data ####
-first.stage.1 = lm(t_ind ~ iv, data = d)
-instrumented.trt = first.stage.1$fitted # Generate fitted values
-reg1 <- lm(d$death ~ instrumented.trt) # Second stage
-summary(reg1)
-reg2 <- lm(d$fatalities ~ instrumented.trt) # Second stage
-summary(reg2)
 
 
 #### RDD ####
