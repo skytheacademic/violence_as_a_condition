@@ -4,7 +4,7 @@
 #### Set Libraries, read in data ####
 library(tidyverse); library(sp); library(ggstream); library(lubridate);
 library(sf); library(tmap); library(tmaptools); library(rstatix);
-library(ggpubr)
+library(ggpubr); library(ggExtra)
 # read in data
 setwd("../")
 a = read.csv("./data/Kunkel-Ellis-final.csv")
@@ -68,19 +68,19 @@ a.st = subset(a, wagner == "State Violence")
 a.wg = subset(a, wagner == "Wagner" & event_date >"2020-12-31")
 a.st = subset(a, wagner == "State Violence" & event_date >"2020-12-31")
 dsc.1 =
-  ggplot() + geom_sf(aes(geometry = car0$geometry), alpha = 0.3,fill = NA) +
+  ggplot() + geom_sf(aes(geometry = car0$geometry), alpha = 0.7,fill = "white") +
   geom_sf(aes(geometry = car2$geometry), alpha = 0) +
   geom_point(data = a.wg, aes(x = longitude, y = latitude, size=fatalities, colour = "#5b92e5"), alpha=0.4, shape = 19) +
   geom_point(data = a.st, aes(x = longitude, y = latitude, size=fatalities, colour = "#e5695b"), alpha=0.5, shape = 19) +
   scale_fill_viridis_c(option="E") +
-  scale_size(range = c(.1, 20), name="Fatalities Count", labels = c("0", "25", "50", "75", "100", "125"), 
-             breaks = c(0, 25, 50, 75, 100, 125)) +
+  scale_size(range = c(.1, 20), name="Fatalities Count", labels = c("25", "50", "75", "100", "125"), 
+             breaks = c(25, 50, 75, 100, 125)) +
   theme_void()
 
-#dsc =
-  dsc.1 + labs(colour = "Variable") +
+dsc =
+  dsc.1 + labs(colour = "Actor") +
   scale_color_manual(labels = c("Wagner", "State Forces"), values = c("#e5695b","#5b92e5")) +
-  theme(legend.background = element_rect(color = "black"), legend.position = c(),
+  theme(legend.background = element_rect(color = "black"),
         plot.margin = unit(c(0,0,0,0), "cm"), legend.margin=margin(c(5,5,5,5)),
         legend.key.size = unit(0.2, 'cm')) +
   guides(shape = guide_legend(order = 1),col = guide_legend(order = 2), legend.direction="vertical")
@@ -152,7 +152,8 @@ boxplot(a$iv, a$event)
 
 
 
-## make boxplot by type of violence and treatment ##
+#### make boxplot by type of violence and treatment ####
+rm(list=ls())
 a = read.csv("./data/Kunkel-Ellis-final.csv")
 a$event_date = ymd(a$event_date)
 a$wagner = "State"
@@ -165,24 +166,64 @@ d.ag = a %>%
             str_d = sum(str_d), vac = sum(vac))
 
 desc = ggboxplot(a, x = "iv", y = "log.f", add = c("jitter"), 
-                 color = "wagner", palette = "lancet")
+                 color = "wagner", palette = "lancet") + 
+  geom_vline(xintercept = 1.5, linetype = "longdash", color = "black")
 
 
 
 pdf("./results/desc.time.pdf")
 ggpar(desc, main = "Violence Before and After Nov. 2021", xlab = "Before (0) / After (1)",
-      ylab = "Log Fatalities", legend.title = "Actor", legend = c(0.5,0.90))
+      ylab = "Log Fatalities", legend.title = "Actor", legend = c(0.1,0.90))
 dev.off()
 
 
-# scatter plot of violence since 2021-11-01
+#### scatter plot of violence since 2021-11-01 #####
+rm(list=ls())
+a = read.csv("./data/Kunkel-Ellis-final.csv")
+a$event_date = ymd(a$event_date)
+a$wagner = "State"
+a$wagner[a$t_ind == 1] = "Wagner"
 a$event_date <- floor_date(a$event_date, "week")
-date = rep(ymd("2021-11-01"), nrow(d))
+date = rep(ymd("2021-11-01"), nrow(a))
 a$score = date - a$event_date
 a$score = as.numeric(a$score)
+a = subset(a, score < abs(min(a$score)))
 d = a %>%
   group_by(score, wagner) %>%
   summarize(death = mean(death), fatalities = sum(fatalities)) %>%
   as.data.frame()
 
-ggplot(d, aes(x = score, y = fatalities, color = wagner))
+library(tidyquant)
+death = 
+  ggplot(d) + 
+  geom_point(aes(x = score, y = fatalities, colour = wagner)) +
+  geom_vline(xintercept = 0, linetype = "longdash", color = "black") +
+  geom_ma(ma_fun = SMA, n = 7, aes(x = score, y = fatalities, colour = wagner, linetype = "solid"))
+
+
+# with marginal histogram
+ggMarginal(death, margins = 'x', size=4,  type="histogram")
+
+
+
+
+
+#### Run some analyses, plot ####
+
+## Naive analyses, regular OLS ##
+#### Analyses ####
+reg0 = lm(death ~ t_ind, data = a)
+reg00 <- lm(fatalities ~ t_ind, data = a)
+summary(reg0)
+summary(reg00)
+
+
+## Instrumented analyses ###
+#### Analyze Data ####
+first.stage.1 = lm(t_ind ~ iv, data = a)
+instrumented.trt = first.stage.1$fitted # Generate fitted values
+reg1 <- lm(a$death ~ instrumented.trt) # Second stage
+summary(reg1)
+reg2 <- lm(a$fatalities ~ instrumented.trt) # Second stage
+summary(reg2)
+
