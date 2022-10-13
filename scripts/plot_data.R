@@ -3,8 +3,7 @@
 
 #### Set Libraries, read in data ####
 library(tidyverse); library(sp); library(ggstream); library(lubridate);
-library(sf); library(tmap); library(tmaptools); library(rstatix);
-library(ggpubr); library(ggExtra)
+library(sf); library(rstatix); library(ggpubr); library(ggExtra)
 # read in data
 setwd("../")
 a = read.csv("./data/Kunkel-Ellis-final.csv")
@@ -211,19 +210,61 @@ ggMarginal(death, margins = 'x', size=4,  type="histogram")
 #### Run some analyses, plot ####
 
 ## Naive analyses, regular OLS ##
-#### Analyses ####
-reg0 = lm(death ~ t_ind, data = a)
-reg00 <- lm(fatalities ~ t_ind, data = a)
+
+b = a
+b$fatalities[b$fatalities == 0] = 0.1
+b$fatalities = log(b$fatalities)
+table(b$fatalities)
+fs = glm(t_ind ~ iv, data = b)
+is.trt = fs$fitted.values
+ts = glm(b$death ~ is.trt)
+ts2 = glm(b$fatalities ~ is.trt)
+summary(ts)
+summary(ts2)
+
+
+
+
+
+## Analyses ##
+reg0 = glm(death ~ t_ind, data = a)
+reg00 <- glm(fatalities ~ t_ind, data = a, family = negative.binomial(theta = 1))
 summary(reg0)
 summary(reg00)
 
+first.stage.1 = glm(t_ind ~ iv, data = a)
+instrumented.trt = first.stage.1$fitted # Generate fitted values
+reg1 <- glm(a$death ~ instrumented.trt) # Second stage
+summary(reg1)
+reg2 <- glm(a$fatalities ~ instrumented.trt, family = negative.binomial(theta = 1)) # Second stage
+summary(reg2)
+
+ggpredict(reg0, terms = "t_ind") # OLS, binary
+ggpredict(reg00, terms = "t_ind") # NB, non-logged continuous
+ggpredict(ts, terms = "is.trt") # OLS, binary (instrumented)
+ggpredict(ts2, terms = "is.trt") # OLS, logged continuous (instrumented)
+ggpredict(reg1, terms = "instrumented.trt") # OLS, binary (instrumented)
+ggpredict(reg2, terms = "instrumented.trt") # NB, non-logged continuous (instrumented)
+
 
 ## Instrumented analyses ###
-#### Analyze Data ####
+## Analyze Data ##
 first.stage.1 = lm(t_ind ~ iv, data = a)
 instrumented.trt = first.stage.1$fitted # Generate fitted values
-reg1 <- lm(a$death ~ instrumented.trt) # Second stage
+reg1 <- glm(a$death ~ instrumented.trt, family = negative.binomial(theta = 1)) # Second stage
 summary(reg1)
-reg2 <- lm(a$fatalities ~ instrumented.trt) # Second stage
+reg2 <- glm(a$fatalities ~ instrumented.trt, family = negative.binomial(theta = 1)) # Second stage
 summary(reg2)
+
+library(AER)
+summary(ivreg(fatalities ~ t_ind | iv, data = a))
+
+ggplot(a, aes(instrumented.trt, fatalities)) +
+  geom_point() +
+  geom_smooth(method='lm') +  scale_x_continuous(breaks = seq(0,1,1)) +
+  ylim(0,50)
+
+
+
+  
 
