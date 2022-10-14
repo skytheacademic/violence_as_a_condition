@@ -225,7 +225,7 @@ summary(ts2)
 
 
 
-
+library(glm.predict)
 ## Analyses ##
 reg0 = glm(death ~ t_ind, data = a)
 reg00 <- glm(fatalities ~ t_ind, data = a, family = negative.binomial(theta = 1))
@@ -238,7 +238,7 @@ reg1 <- glm(a$death ~ instrumented.trt) # Second stage
 summary(reg1)
 reg2 <- glm(a$fatalities ~ instrumented.trt, family = negative.binomial(theta = 1)) # Second stage
 summary(reg2)
-
+library(ggeffects)
 ggpredict(reg0, terms = "t_ind") # OLS, binary
 ggpredict(reg00, terms = "t_ind") # NB, non-logged continuous
 ggpredict(ts, terms = "is.trt") # OLS, binary (instrumented)
@@ -265,6 +265,23 @@ ggplot(a, aes(instrumented.trt, fatalities)) +
   ylim(0,50)
 
 
-
-  
-
+#### Odds Ratios Plots ####
+reg1.cf = exp(reg1$coefficients) %>%
+  as.data.frame()
+reg1.ci = exp(confint(reg1)) %>%
+  as.data.frame()
+reg1.cf = cbind(reg1.cf, reg1.ci)
+names(reg1.cf)[1] = "fatalities"
+names(reg1.cf)[2] = "ci_low"
+names(reg1.cf)[3] = "ci_high"
+reg1.cf$row_names = row.names(reg1.cf)
+y_labs = rev(c("Wagner Violence", "State Violence (Intercept)"))
+level_order = rev(c("Fatalities", "(Intercept)"))
+svg("./results/or_gov_event_b.svg")
+ggplot(reg1.cf, aes(y = factor(row_names, level = level_order), x = fatalities)) + 
+  geom_vline(aes(xintercept = 1), size = .15, linetype = "dashed") + 
+  geom_errorbarh(aes(xmax = ci_high, xmin = ci_low), size = .5, height = 
+                   .1, color = "gray50") + geom_point(size = 2.5, color = "#99325D") +
+  xlim(0.21,10.6) + theme_pubclean() + scale_y_discrete(labels = y_labs) + ylab("") +
+  xlab("Odds ratio") + ggtitle("Wagner v. State Violence Risk of Violence by Government")
+dev.off()
