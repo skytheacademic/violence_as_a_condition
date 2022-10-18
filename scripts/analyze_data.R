@@ -11,8 +11,8 @@ a$event_date = ymd(a$event_date)
 
 
 #### Naive analyses ####
-reg0 = lm(death ~ t_ind, data = a)
-reg00 <- lm(fatalities ~ t_ind, data = a)
+reg0 = lm(death ~ t_ind + fatalities.lag, data = a)
+reg00 <- lm(fatalities ~ t_ind + fatalities.lag, data = a)
 summary(reg0)
 summary(reg00)
 

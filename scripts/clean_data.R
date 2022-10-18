@@ -27,6 +27,18 @@ table(d$t_ind)
 d = subset(d, inter1 == 1 | inter1 == 3 | inter1 == 7 | inter1 == 8 |
              inter2 == 1 | inter2 == 3 | inter2 == 7 | inter2 == 8)
 
+d = d[!(d$inter1 ==2 & d$inter2 == 3), ] # drop data where only militia and rebels present
+d = d[!(d$inter1 ==2 & d$inter2 == 7), ] # drop data where only rebels and militia present
+d = d[!(d$inter1 ==3 & d$inter2 == 0), ] # drop data where only militias present
+d = d[!(d$inter1 ==3 & d$inter2 == 3), ] # drop data where militias fight each other
+d = d[!(d$inter1 ==3 & d$inter2 == 4), ] # drop data where militias fight each other
+d = d[!(d$inter1 ==3 & d$inter2 == 5), ] # drop data where militias fight rioters
+d = d[!(d$inter1 ==3 & d$inter2 == 7), ] # drop data where militias attack civilians
+d = d[!(d$inter1 ==4 & d$inter2 == 7), ] # drop data where militias attack civilians
+d = d[!(d$inter1 ==5 & d$inter2 == 7), ] # drop data where rioters attack civilians
+d = d[!(d$inter1 ==7 & d$inter2 == 0), ] # drop data where civilians only are present
+d = d[!(d$inter1 ==8 & d$inter2 == 0), ] # drop data on external forces movement
+
 # change date to date-time object
 d$event_date = dmy(d$event_date) 
 
@@ -57,9 +69,6 @@ d$str_d[d$sub_event_type == "Arrests" | d$sub_event_type == "Looting/property de
 d$vac = 0
 d$vac[d$event_type == "Violence against civilians"] = 1
 
-
-
-
 #### Instrumental variable ####
 # make the instrument
 table(d$t_ind[d$event_date> "2021-11-01"])
@@ -70,6 +79,29 @@ mean(t$death[t$event_date < "2021-11-01"])
 d$iv = 0
 d$iv[d$event_date> "2021-11-01"] = 1
 
+#### Creating/merging control variables ####
+a = read.csv("./data/acled/1900-01-01-2022-09-28-Central_African_Republic.csv") %>%
+  select(-c(iso, event_id_cnty, event_id_no_cnty, 
+            region, source, source_scale, timestamp))
+a = subset(a, inter1 == 2 | inter1 == 3 | inter1 == 4) # subset to any events by militia or rebels
+a$event = 1 # make this for sum of violent events
+a$event_date = dmy(a$event_date) 
+
+# create sum of events in the past 30 days #
+# group by month and year
+a$event_date = floor_date(a$event_date, "month")
+a$event_date = a$event_date - months(1) # subtract one month to make this a lagged variable
+a$month = month(a$event_date)
+a = a %>%
+  group_by(year, month) %>%
+  summarize(event.lag = sum(event), fatalities.lag = sum(fatalities)) %>%
+  as.data.frame()
+
+d$month = month(d$event_date)
+
+# merge violent events by month
+d = left_join(d, a, by = c("year", "month"))
+  
 #### Export Data ####
 write.csv(d, "./data/Kunkel-Ellis-final.csv", row.names=FALSE)
 

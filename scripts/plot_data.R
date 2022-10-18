@@ -69,8 +69,8 @@ a.st = subset(a, wagner == "State Violence" & event_date >"2020-12-31")
 dsc.1 =
   ggplot() + geom_sf(aes(geometry = car0$geometry), alpha = 0.7,fill = "white") +
   geom_sf(aes(geometry = car2$geometry), alpha = 0) +
-  geom_point(data = a.wg, aes(x = longitude, y = latitude, size=fatalities, colour = "#5b92e5"), alpha=0.4, shape = 19) +
-  geom_point(data = a.st, aes(x = longitude, y = latitude, size=fatalities, colour = "#e5695b"), alpha=0.5, shape = 19) +
+  geom_point(data = a.wg, aes(x = longitude, y = latitude, size=fatalities, colour = "#e5695b"), alpha=0.4, shape = 19) +
+  geom_point(data = a.st, aes(x = longitude, y = latitude, size=fatalities, colour = "#5b92e5"), alpha=0.5, shape = 19) +
   scale_fill_viridis_c(option="E") +
   scale_size(range = c(.1, 20), name="Fatalities Count", labels = c("25", "50", "75", "100", "125"), 
              breaks = c(25, 50, 75, 100, 125)) +
@@ -78,7 +78,7 @@ dsc.1 =
 
 dsc =
   dsc.1 + labs(colour = "Actor") +
-  scale_color_manual(labels = c("Wagner", "State Forces"), values = c("#e5695b","#5b92e5")) +
+  scale_color_manual(labels = c("State Forces", "Wagner"), values = c("#e5695b", "#5b92e5")) +
   theme(legend.background = element_rect(color = "black"),
         plot.margin = unit(c(0,0,0,0), "cm"), legend.margin=margin(c(5,5,5,5)),
         legend.key.size = unit(0.2, 'cm')) +
@@ -136,11 +136,11 @@ a = subset(a, t_ind == 1)
 a = subset(a, event_type == "Battles" | event_type == "Violence against civilians")
 d = a %>%
   group_by(event_date, event_type) %>%
-  summarize(death = mean(death), fatalities = sum(fatalities), event = sum(event)) %>%
+  summarize(death = mean(death), fatalities = sum(fatalities)) %>%
   as.data.frame()
 
 # make into plot
-ggplot(d, aes(x = event_date, y = event, fill = event_type)) +
+ggplot(d, aes(x = event_date, y = fatalities, fill = event_type)) +
   geom_stream(type = "ridge")
 ggplot(data = a, mapping = aes(x = event_date, y=fatalities)) + 
   geom_density(stat = "identity")
