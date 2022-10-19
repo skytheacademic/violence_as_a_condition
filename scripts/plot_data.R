@@ -98,10 +98,10 @@ d = d %>%
   as.data.frame()
 d$event_date = ymd(d$event_date)
 
-ggplot(d, aes(x = event_date, y = fatalities, fill = wagner)) +
+ggplot(d, aes(x = event_date, y = death, fill = wagner)) +
   geom_stream(type = "ridge")
 ggplot(d) +
-  geom_line(aes(x = event_date, y = fatalities, color = wagner))
+  geom_line(aes(x = event_date, y = death, color = wagner))
 
 plot(d$wagner, d$event_date)
 
@@ -116,13 +116,14 @@ d = d %>%
   as.data.frame()
 d$event_date = ymd(d$event_date)
 
-ggplot(d, aes(x = event_date, y = fatalities, fill = event_type)) +
+ggplot(d, aes(x = event_date, y = death, fill = event_type)) +
   geom_stream(type = "ridge")
 ggplot(d) +
   geom_line(aes(x = event_date, y = fatalities, color = wagner))
 
 
 #### Plot Wagner Violence Severity over time ####
+rm(list=ls())
 a = read.csv("./data/Kunkel-Ellis-final.csv")
 a$event_date = ymd(a$event_date)
 a$wagner = "State Violence"
@@ -195,12 +196,25 @@ death =
   ggplot(d) + 
   geom_point(aes(x = score, y = fatalities, colour = wagner)) +
   geom_vline(xintercept = 0, linetype = "longdash", color = "black") +
-  geom_ma(ma_fun = SMA, n = 7, aes(x = score, y = fatalities, colour = wagner, linetype = "solid"))
+  geom_ma(ma_fun = SMA, n = 14, aes(x = score, y = fatalities, 
+                                   colour = wagner, linetype = "solid")) +
+  xlab("Days Before and After Nov. 1, 2021") + ylab("Fatalities") +
+  labs(colour = "Actor") + guides(linetype = "none") +
+  scale_color_manual(labels = c("State Forces", "Wagner"), values = c("#A52A2A", "#000000")) +
+  theme_pubr()
 
+
+
+# scale_color_manual(labels = c("Wagner", "State Forces"), values = c("#000000", "#A52A2A")) +
+#   theme(legend.background = element_rect(color = "black"),
+#         plot.margin = unit(c(1,1,1,1), "cm"), legend.margin=margin(c(5,5,5,5)),
+#         legend.key.size = unit(0.05, 'cm')) +
+  
 
 # with marginal histogram
-ggMarginal(death, margins = 'x', size=4,  type="histogram")
-
+pdf("./results/death_scatter.pdf")
+ggMarginal(death, margins = 'x', size=4,  type="histogram", groupFill = TRUE)
+dev.off()
 
 
 
