@@ -61,16 +61,14 @@ ggplot() +
   xlim(bbox_car[1], bbox_car[3]) + ylim(bbox_car[2], bbox_car[4]) + theme_void() +
   theme(plot.margin = unit(c(0,0,0,0), "cm"))
 
-a.wg = subset(a, wagner == "Wagner")
-a.st = subset(a, wagner == "State Violence")
-
+# plot violence since 2021 when Wagner starts ramping up operations #
 a.wg = subset(a, wagner == "Wagner" & event_date >"2020-12-31")
 a.st = subset(a, wagner == "State Violence" & event_date >"2020-12-31")
 dsc.1 =
   ggplot() + geom_sf(aes(geometry = car0$geometry), alpha = 0.7,fill = "white") +
   geom_sf(aes(geometry = car2$geometry), alpha = 0) +
-  geom_point(data = a.wg, aes(x = longitude, y = latitude, size=fatalities, colour = "#e5695b"), alpha=0.4, shape = 19) +
-  geom_point(data = a.st, aes(x = longitude, y = latitude, size=fatalities, colour = "#5b92e5"), alpha=0.5, shape = 19) +
+  geom_point(data = a.wg, aes(x = longitude, y = latitude, size=fatalities, colour = "#000000"), alpha=0.4, shape = 19) +
+  geom_point(data = a.st, aes(x = longitude, y = latitude, size=fatalities, colour = "#A52A2A"), alpha=0.5, shape = 19) +
   scale_fill_viridis_c(option="E") +
   scale_size(range = c(.1, 20), name="Fatalities Count", labels = c("25", "50", "75", "100", "125"), 
              breaks = c(25, 50, 75, 100, 125)) +
@@ -78,12 +76,12 @@ dsc.1 =
 
 dsc =
   dsc.1 + labs(colour = "Actor") +
-  scale_color_manual(labels = c("State Forces", "Wagner"), values = c("#e5695b", "#5b92e5")) +
+  scale_color_manual(labels = c("Wagner", "State Forces"), values = c("#000000", "#A52A2A")) +
   theme(legend.background = element_rect(color = "black"),
-        plot.margin = unit(c(0,0,0,0), "cm"), legend.margin=margin(c(5,5,5,5)),
-        legend.key.size = unit(0.2, 'cm')) +
+        plot.margin = unit(c(1,1,1,1), "cm"), legend.margin=margin(c(5,5,5,5)),
+        legend.key.size = unit(0.05, 'cm')) +
   guides(shape = guide_legend(order = 1),col = guide_legend(order = 2), legend.direction="vertical")
-pdf("./results/violence_by_actor.pdf")
+pdf("./results/violence_by_actor_21-22.pdf")
 dsc
 dev.off()
 
