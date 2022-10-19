@@ -5,6 +5,7 @@
 library(tidyverse); library(sp); library(ggstream); library(lubridate);
 library(sf); library(rstatix); library(ggpubr); library(ggExtra)
 # read in data
+options(scipen = 999) # turn off scientific notation
 setwd("../")
 a = read.csv("./data/Kunkel-Ellis-final.csv")
 a$event_date = ymd(a$event_date)
@@ -263,18 +264,18 @@ ggpredict(reg2, terms = "instrumented.trt") # NB, non-logged continuous (instrum
 ## Analyze Data ##
 first.stage.1 = lm(t_ind ~ iv, data = a)
 instrumented.trt = first.stage.1$fitted # Generate fitted values
-reg1 <- glm(a$death ~ instrumented.trt, family = negative.binomial(theta = 1)) # Second stage
+reg1 <- glm(a$death ~ instrumented.trt + a$fatalities.lag) # Second stage
 summary(reg1)
-reg2 <- glm(a$fatalities ~ instrumented.trt, family = negative.binomial(theta = 1)) # Second stage
+reg2 <- glm(a$fatalities ~ instrumented.trt + a$fatalities.lag) # Second stage
 summary(reg2)
 
-library(AER)
-summary(ivreg(fatalities ~ t_ind | iv, data = a))
-
-ggplot(a, aes(instrumented.trt, fatalities)) +
-  geom_point() +
-  geom_smooth(method='lm') +  scale_x_continuous(breaks = seq(0,1,1)) +
-  ylim(0,50)
+# library(AER)
+# summary(ivreg(fatalities ~ t_ind + fatalities.lag | iv, data = a))
+# 
+# ggplot(a, aes(instrumented.trt, fatalities)) +
+#   geom_point() +
+#   geom_smooth(method='lm') +  scale_x_continuous(breaks = seq(0,1,1)) +
+#   ylim(0,50)
 
 
 #### Odds Ratios Plots ####
@@ -287,13 +288,13 @@ names(reg1.cf)[1] = "fatalities"
 names(reg1.cf)[2] = "ci_low"
 names(reg1.cf)[3] = "ci_high"
 reg1.cf$row_names = row.names(reg1.cf)
-y_labs = rev(c("Wagner Violence", "State Violence (Intercept)"))
-level_order = rev(c("Fatalities", "(Intercept)"))
-svg("./results/or_gov_event_b.svg")
+y_labs = rev(c("Wagner Violence", "Fatalities Lag","State Violence (Intercept)"))
+level_order = rev(c("Fatalities", "a$fatalities.lag", "(Intercept)"))
+pdf("./results/or_death.pdf")
 ggplot(reg1.cf, aes(y = factor(row_names, level = level_order), x = fatalities)) + 
   geom_vline(aes(xintercept = 1), size = .15, linetype = "dashed") + 
   geom_errorbarh(aes(xmax = ci_high, xmin = ci_low), size = .5, height = 
-                   .1, color = "gray50") + geom_point(size = 2.5, color = "#99325D") +
-  xlim(0.21,10.6) + theme_pubclean() + scale_y_discrete(labels = y_labs) + ylab("") +
-  xlab("Odds ratio") + ggtitle("Wagner v. State Violence Risk of Violence by Government")
+                   .1, color = "gray50") + geom_point(size = 2.5, color = "#A52A2A") +
+  xlim(0,4.9) + theme_pubclean() + scale_y_discrete(labels = y_labs) + ylab("") +
+  xlab("Odds ratio") + ggtitle("Wagner v. State Violence Risk of Death by Actor")
 dev.off()
