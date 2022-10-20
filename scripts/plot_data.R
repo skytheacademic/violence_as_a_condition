@@ -190,7 +190,7 @@ date = rep(ymd("2021-11-01"), nrow(a))
 a$score = date - a$event_date
 a$score = as.numeric(a$score)
 a$score = a$score*(-1)
-a = subset(a, score > -400)
+a = subset(a, score > -500)
 d = a %>%
   group_by(score, wagner) %>%
   summarize(death = mean(death), fatalities = sum(fatalities)) %>%
