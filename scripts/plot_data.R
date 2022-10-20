@@ -78,14 +78,17 @@ dsc.1 =
 dsc =
   dsc.1 + labs(colour = "Actor") +
   scale_color_manual(labels = c("Wagner", "State Forces"), values = c("#000000", "#A52A2A")) +
-  theme(legend.background = element_rect(color = "black"),
+  theme(legend.background = element_rect(color = "black"), legend.position = c(0.5, -0.125),
         plot.margin = unit(c(1,1,1,1), "cm"), legend.margin=margin(c(5,5,5,5)),
-        legend.key.size = unit(0.05, 'cm')) +
-  guides(shape = guide_legend(order = 1),col = guide_legend(order = 2), legend.direction="vertical")
+        legend.key.size = unit(0.05, 'cm'), legend.direction="horizontal") +
+  guides(shape = guide_legend(order = 1),col = guide_legend(order = 2))
 pdf("./results/violence_by_actor_21-22.pdf")
 dsc
 dev.off()
 
+theme(legend.background = element_rect(color = "black"), legend.position = c(0.25, 0.3),
+      plot.margin = unit(c(0,0,0,0), "cm"), legend.margin=margin(c(5,5,5,5)), 
+      legend.key.size = unit(0.2, 'cm')) + 
 
 
 #### Plot violence severity by treatment over time ####
@@ -186,7 +189,8 @@ a$event_date <- floor_date(a$event_date, "week")
 date = rep(ymd("2021-11-01"), nrow(a))
 a$score = date - a$event_date
 a$score = as.numeric(a$score)
-a = subset(a, score < abs(min(a$score)))
+a$score = a$score*(-1)
+a = subset(a, score > -400)
 d = a %>%
   group_by(score, wagner) %>%
   summarize(death = mean(death), fatalities = sum(fatalities)) %>%
