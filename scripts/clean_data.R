@@ -6,7 +6,7 @@ options(scipen = 999) # turn off scientific notation
 
 #### Clean Data ####
 # load data #
-d = read.csv("./data/acled/1900-01-01-2022-09-28-Central_African_Republic.csv") %>%
+d = read.csv("./data/acled/1900-01-01-2022-10-25-Central_African_Republic.csv") %>%
   select(-c(iso, event_id_cnty, event_id_no_cnty, 
             region, source, source_scale, timestamp))
 
@@ -80,7 +80,7 @@ d$iv = 0
 d$iv[d$event_date> "2021-11-01"] = 1
 
 #### Creating/merging control variables ####
-a = read.csv("./data/acled/1900-01-01-2022-09-28-Central_African_Republic.csv") %>%
+a = read.csv("./data/acled/1900-01-01-2022-10-25-Central_African_Republic.csv") %>%
   select(-c(iso, event_id_cnty, event_id_no_cnty, 
             region, source, source_scale, timestamp))
 a = subset(a, inter1 == 2 | inter1 == 3 | inter1 == 4) # subset to any events by militia or rebels
