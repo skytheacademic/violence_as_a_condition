@@ -161,11 +161,6 @@ a$event_date = ymd(a$event_date)
 a$wagner = "State"
 a$wagner[a$t_ind == 1] = "Wagner"
 a$log.f = log(a$fatalities)
-d.ag = a %>%
-  group_by(wagner, iv) %>%
-  summarize(death = mean(death), fatalities = sum(fatalities), battle = sum(battle),
-            remote = sum(remote), protest = sum(protest), riot = sum(riot), 
-            str_d = sum(str_d), vac = sum(vac))
 
 desc = ggboxplot(a, x = "iv", y = "log.f", add = c("jitter"), 
                  color = "wagner", palette = "lancet") + 
@@ -178,6 +173,40 @@ ggpar(desc, main = "Violence Before and After Nov. 2021", xlab = "Before (0) / A
       ylab = "Log Fatalities", legend.title = "Actor", legend = c(0.1,0.90))
 dev.off()
 
+# let's try making joyplot still need to log deaths?
+library(ggridges) # geom_density_ridges_gradient
+library(viridis)  # scale_fill_viridis
+library(hrbrthemes) # theme_ipsum
+
+a$act = NA
+a$act[a$iv == 0 & a$t_ind == 1] = "Wagner, Pre-Ukraine"
+a$act[a$iv == 1 & a$t_ind == 1] = "Wagner, Post-Ukraine"
+a$act[a$iv == 0 & a$t_ind == 0] = "State, Pre-Ukraine"
+a$act[a$iv == 1 & a$t_ind == 0] = "State, Post-Ukraine"
+ggplot(a, aes(x = `fatalities`, y = `act`, fill = stat(x))) +
+  geom_density_ridges_gradient(scale = 2, rel_min_height = 0.01) +
+  scale_fill_viridis(name = "fatalities", option = "C") +
+  xlim(-1.75,26) +
+  labs(title = 'Violence Pre and Post Ukraine in the CAR') +
+  theme_ipsum() +
+  theme(
+    legend.position="none",
+    panel.spacing = unit(0.1, "lines"),
+    strip.text.x = element_text(size = 8)
+  )
+
+
+# example plot
+ggplot(lincoln_weather, aes(x = `Mean Temperature [F]`, y = `Month`, fill = ..x..)) +
+  geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
+  scale_fill_viridis(name = "Temp. [F]", option = "C") +
+  labs(title = 'Temperatures in Lincoln NE in 2016') +
+  theme_ipsum() +
+  theme(
+    legend.position="none",
+    panel.spacing = unit(0.1, "lines"),
+    strip.text.x = element_text(size = 8)
+  )
 
 #### scatter plot of violence since 2021-11-01 #####
 rm(list=ls())
@@ -204,21 +233,13 @@ death =
   geom_ma(ma_fun = SMA, n = 14, aes(x = score, y = fatalities, 
                                    colour = wagner, linetype = "solid")) +
   xlab("Days Before and After Nov. 1, 2021") + ylab("Fatalities") +
-  labs(colour = "Actor") + guides(linetype = "none") +
+  labs(colour = "Actor") + guides(linetype = "none") + ylim(0,120) +
   scale_color_manual(labels = c("State Forces", "Wagner"), values = c("#A52A2A", "#000000")) +
   theme_pubr()
 
-
-
-# scale_color_manual(labels = c("Wagner", "State Forces"), values = c("#000000", "#A52A2A")) +
-#   theme(legend.background = element_rect(color = "black"),
-#         plot.margin = unit(c(1,1,1,1), "cm"), legend.margin=margin(c(5,5,5,5)),
-#         legend.key.size = unit(0.05, 'cm')) +
-  
-
 # with marginal histogram
 pdf("./results/death_scatter.pdf")
-ggMarginal(death, margins = 'x', size=4,  type="histogram", groupFill = TRUE)
+death
 dev.off()
 
 
