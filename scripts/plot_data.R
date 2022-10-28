@@ -178,35 +178,39 @@ library(ggridges) # geom_density_ridges_gradient
 library(viridis)  # scale_fill_viridis
 library(hrbrthemes) # theme_ipsum
 
+
+round(mean(a$fatalities[a$iv == 0 & a$t_ind == 1]), digits = 2)
+round(mean(a$fatalities[a$iv == 1 & a$t_ind == 1]), digits = 2)
+round(mean(a$fatalities[a$iv == 0 & a$t_ind == 0]), digits = 2)
+round(mean(a$fatalities[a$iv == 1 & a$t_ind == 0]), digits = 2)
+
+
+
 a$act = NA
 a$act[a$iv == 0 & a$t_ind == 1] = "Wagner, Pre-Ukraine"
 a$act[a$iv == 1 & a$t_ind == 1] = "Wagner, Post-Ukraine"
 a$act[a$iv == 0 & a$t_ind == 0] = "State, Pre-Ukraine"
 a$act[a$iv == 1 & a$t_ind == 0] = "State, Post-Ukraine"
+pdf("./results/violence_joyplot.pdf")
+svg("./results/violence_joyplot.svg")
 ggplot(a, aes(x = `fatalities`, y = `act`, fill = stat(x))) +
-  geom_density_ridges_gradient(scale = 2, rel_min_height = 0.01) +
-  scale_fill_viridis(name = "fatalities", option = "C") +
-  xlim(-1.75,26) +
-  labs(title = 'Violence Pre and Post Ukraine in the CAR') +
-  theme_ipsum() +
-  theme(
-    legend.position="none",
-    panel.spacing = unit(0.1, "lines"),
-    strip.text.x = element_text(size = 8)
-  )
+  geom_density_ridges_gradient(scale = 1.5, rel_min_height = 0.01, alpha = 0.5) +
+  scale_fill_gradient(low = "#ff3b3b", high = "#000000", space = "Lab",
+                      guide = "colourbar", aesthetics = "fill") +
+  #  scale_fill_viridis(name = "fatalities", option = "e") +
+  xlim(-1.75,26) + labs(title = 'Violence in the CAR, pre- and post-Ukraine') +
+  theme_ipsum() + ylab("") +
+  annotate(geom="text", x=21.5, y=4.5, label= "bar(x)", color="black", parse=T) +
+  annotate(geom="text", x=23.5, y=4.5, label= "= 2.82", color="black") +
+  annotate(geom="text", x=23.5, y=3.5, label="   5.24", color="black") +
+  annotate(geom="text", x=23.5, y=2.5, label="   1.61", color="black") +
+  annotate(geom="text", x=23.5, y=1.5, label="   1.86", color="black") +
+  theme(plot.title = element_text(family="Times"), legend.position="none", panel.spacing = unit(0.1, "lines"), 
+        strip.text.x = element_text(size = 8), 
+        axis.title.x = element_text(size =12, hjust = 0.4))
+dev.off()
 
 
-# example plot
-ggplot(lincoln_weather, aes(x = `Mean Temperature [F]`, y = `Month`, fill = ..x..)) +
-  geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
-  scale_fill_viridis(name = "Temp. [F]", option = "C") +
-  labs(title = 'Temperatures in Lincoln NE in 2016') +
-  theme_ipsum() +
-  theme(
-    legend.position="none",
-    panel.spacing = unit(0.1, "lines"),
-    strip.text.x = element_text(size = 8)
-  )
 
 #### scatter plot of violence since 2021-11-01 #####
 rm(list=ls())
@@ -289,9 +293,9 @@ ggpredict(reg2, terms = "instrumented.trt") # NB, non-logged continuous (instrum
 ## Analyze Data ##
 first.stage.1 = lm(t_ind ~ iv, data = a)
 instrumented.trt = first.stage.1$fitted # Generate fitted values
-reg1 <- glm(a$death ~ instrumented.trt + a$fatalities.lag) # Second stage
+reg1 <- glm(a$death ~ instrumented.trt + a$fatalities.lag, family = negative.binomial(theta = 1)) # Second stage
 summary(reg1)
-reg2 <- glm(a$fatalities ~ instrumented.trt + a$fatalities.lag) # Second stage
+reg2 <- glm(a$fatalities ~ instrumented.trt + a$fatalities.lag, family = negative.binomial(theta = 1)) # Second stage
 summary(reg2)
 
 # library(AER)
@@ -319,7 +323,9 @@ pdf("./results/or_death.pdf")
 ggplot(reg1.cf, aes(y = factor(row_names, level = level_order), x = fatalities)) + 
   geom_vline(aes(xintercept = 1), size = .15, linetype = "dashed") + 
   geom_errorbarh(aes(xmax = ci_high, xmin = ci_low), size = .5, height = 
-                   .1, color = "gray50") + geom_point(size = 2.5, color = "#A52A2A") +
-  xlim(0,4.9) + theme_pubclean() + scale_y_discrete(labels = y_labs) + ylab("") +
+                   .15, color = "gray50") + geom_point(size = 3, color = "#A52A2A") +
+  theme_pubclean() + scale_y_discrete(labels = y_labs) + ylab("") +
+  scale_x_continuous(limits = c(0,31), breaks = c(0,1,10,30)) +
+  theme(plot.title = element_text(size = 18)) +
   xlab("Odds ratio") + ggtitle("Wagner v. State Violence Risk of Death by Actor")
 dev.off()
