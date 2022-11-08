@@ -1,6 +1,6 @@
 # Sky Kunkel #
 # Violence as a Condition: Cleaning Data #
-library(tidyverse); library(lubridate)
+library(tidyverse); library(lubridate); library(sf); library(sp); library(spatialEco)
 setwd("../")
 options(scipen = 999) # turn off scientific notation
 
@@ -101,7 +101,91 @@ d$month = month(d$event_date)
 
 # merge violent events by month
 d = left_join(d, a, by = c("year", "month"))
-  
+
+# load in gold and diamond controls
+prio.static = read_csv("./data/prio/PRIO-GRID Static Variables - 2022-11-07.csv")
+prio.yearly = read_csv("./data/prio/PRIO-GRID Yearly Variables for 1946-2014 - 2022-11-07.csv")
+
+names(prio.static)[1] = "prio.grid" # rename for merging
+names(prio.yearly)[1] = "prio.grid" # rename for merging
+prio.static$prio.grid = as.character(prio.static$prio.grid)
+prio.yearly$prio.grid = as.character(prio.yearly$prio.grid)
+
+# get rid of NAs
+prio.static$diamsec_s[is.na(prio.static$diamsec_s)] <- 0
+prio.static$diamprim_s[is.na(prio.static$diamprim_s)] <- 0
+prio.static$diam = prio.static$diamsec_s + prio.static$diamprim_s
+prio.static$diam[prio.static$diam == 2] <- 1
+prio.static$goldplacer_s[is.na(prio.static$goldplacer_s)] <- 0
+prio.static$goldvein_s[is.na(prio.static$goldvein_s)] <- 0
+prio.static$goldsurface_s[is.na(prio.static$goldsurface_s)] <- 0
+prio.static$gold = prio.static$goldplacer_s + prio.static$goldsurface_s + prio.static$goldvein_s
+prio.static$gold[prio.static$gold > 1] <- 1
+prio.static = subset(prio.static, select = -c(2:10) )
+
+# get rid of NAs
+prio.yearly$diamsec_y[is.na(prio.yearly$diamsec_y)] <- 0
+prio.yearly$diamprim_y[is.na(prio.yearly$diamprim_y)] <- 0
+prio.yearly$diam = prio.yearly$diamsec_y + prio.yearly$diamprim_y
+prio.yearly$diam[prio.yearly$diam == 2] <- 1
+prio.yearly$goldplacer_y[is.na(prio.yearly$goldplacer_y)] <- 0
+prio.yearly$goldvein_y[is.na(prio.yearly$goldvein_y)] <- 0
+prio.yearly$goldsurface_y[is.na(prio.yearly$goldsurface_y)] <- 0
+prio.yearly$gold = prio.yearly$goldplacer_y + prio.yearly$goldsurface_y + prio.yearly$goldvein_y
+prio.yearly$gold[prio.yearly$gold > 1] <- 1
+prio.yearly = subset(prio.yearly, select = -c(3:7) )
+
+# group by grid to get rid of year variable
+prio.yearly = prio.yearly %>%
+  group_by(prio.grid) %>%
+  summarize(diam = sum(diam), gold = sum(gold)) %>%
+  as.data.frame()
+prio.yearly$gold[prio.yearly$gold > 1] <- 1
+prio.yearly$diam[prio.yearly$diam > 1] <- 1
+
+# merge prio variables
+a = left_join(prio.yearly, prio.static, by = "prio.grid")
+a$diam = a$diam.x + a$diam.y
+a$gold = a$gold.x + a$gold.y
+a$gold[a$gold > 1] <- 1
+a$diam[a$diam > 1] <- 1
+a = subset(a, select = -c(2:5) )
+a$prio.grid = as.numeric(a$prio.grid)
+
+rm(prio.static, prio.yearly)
+
+# read in PRIO shape files from their website
+# prio uses WGS84 CRS
+prio = st_read(dsn = "./data/prio/shp", 
+               layer = "priogrid_cell", 
+               stringsAsFactors = F) %>% 
+  mutate(gid = as.character(gid))
+
+names(prio)[1] = "prio.grid" # rename for merging
+prio$prio.grid = as.numeric(prio$prio.grid) # transform the column into numeric so we can join the data
+prio = left_join(prio, a)
+prio$diam[is.na(prio$diam)] <- 0
+prio$gold[is.na(prio$gold)] <- 0
+
+# transform both datasets into  spatial objects
+prio.sp = as(prio, Class = "Spatial") # 
+
+# assign crs system for ACLED data #
+wgs84 <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+d <- SpatialPointsDataFrame(d[20:19],         # reading in the dataframe as a spatial object
+                                   d,                 # the R object to convert
+                                   proj4string = wgs84)   # assign a CRS 
+
+
+# map the gold and diamond data to individual violence
+b = point.in.poly(d, prio.sp, sp = TRUE, duplicate = TRUE)
+d = as.data.frame(b) # convert to dataframe
+
+d = d %>%
+  select(-c(prio.grid, xcoord, ycoord, col, row, coords.x1, coords.x2))
+
+
 #### Export Data ####
 write.csv(d, "./data/Kunkel-Ellis-final.csv", row.names=FALSE)
 
