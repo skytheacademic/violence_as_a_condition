@@ -3,7 +3,7 @@
 
 #### Set Libraries, read in data ####
 library(tidyverse); library(sp); library(ggstream); library(lubridate);
-library(sf); library(rstatix); library(ggpubr); library(ggExtra)
+library(sf); library(rstatix); library(ggpubr); library(ggExtra); library(stargazer)
 # read in data
 options(scipen = 999) # turn off scientific notation
 setwd("../")
@@ -257,12 +257,31 @@ b = a
 b$fatalities[b$fatalities == 0] = 0.1
 b$fatalities = log(b$fatalities)
 table(b$fatalities)
-fs = glm(t_ind ~ iv, data = b)
+fs = glm(t_ind ~ score, data = b)
 is.trt = fs$fitted.values
 ts = glm(b$death ~ is.trt)
 ts2 = glm(b$fatalities ~ is.trt)
 summary(ts)
 summary(ts2)
+
+fs = glm(t_ind ~ score, data = a)
+is.trt = fs$fitted.values
+ts = glm(a$death ~ is.trt)
+ts2 = glm(a$fatalities ~ is.trt)
+summary(ts)
+summary(ts2)
+
+
+# b = a
+# b$fatalities[b$fatalities == 0] = 0.1
+# b$fatalities = log(b$fatalities)
+# table(b$fatalities)
+# fs = glm(t_ind ~ iv, data = b)
+# is.trt = fs$fitted.values
+# ts = glm(b$death ~ is.trt)
+# ts2 = glm(b$fatalities ~ is.trt)
+# summary(ts)
+# summary(ts2)
 
 
 
@@ -274,7 +293,7 @@ reg00 <- glm(fatalities ~ t_ind, data = a, family = negative.binomial(theta = 1)
 summary(reg0)
 summary(reg00)
 
-first.stage.1 = glm(t_ind ~ iv, data = a)
+first.stage.1 = glm(t_ind ~ score, data = a)
 instrumented.trt = first.stage.1$fitted # Generate fitted values
 reg1 <- glm(a$death ~ instrumented.trt) # Second stage
 summary(reg1)
@@ -291,7 +310,7 @@ ggpredict(reg2, terms = "instrumented.trt") # NB, non-logged continuous (instrum
 
 ## Instrumented analyses ###
 ## Analyze Data ##
-first.stage.1 = lm(t_ind ~ iv, data = a)
+first.stage.1 = lm(t_ind ~ score, data = a)
 instrumented.trt = first.stage.1$fitted # Generate fitted values
 reg1 <- glm(a$death ~ instrumented.trt + a$fatalities.lag, family = negative.binomial(theta = 1)) # Second stage
 summary(reg1)
@@ -308,9 +327,9 @@ summary(reg2)
 
 
 #### Odds Ratios Plots ####
-reg1.cf = exp(reg1$coefficients) %>%
+reg1.cf = exp(reg2$coefficients) %>%
   as.data.frame()
-reg1.ci = exp(confint(reg1)) %>%
+reg1.ci = exp(confint(reg2)) %>%
   as.data.frame()
 reg1.cf = cbind(reg1.cf, reg1.ci)
 names(reg1.cf)[1] = "fatalities"

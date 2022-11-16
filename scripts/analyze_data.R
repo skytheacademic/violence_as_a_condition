@@ -24,3 +24,14 @@ reg1 <- lm(a$death ~ instrumented.trt) # Second stage
 summary(reg1)
 reg2 <- lm(a$fatalities ~ instrumented.trt) # Second stage
 summary(reg2)
+
+
+summary(lm(fatalities ~ score, data = d))
+
+first.stage.1 = lm(t_ind ~ score, data = d)
+instrumented.trt = first.stage.1$fitted # Generate fitted values
+reg1 <- lm(d$death ~ instrumented.trt) # Second stage
+summary(reg1)
+reg2 <- lm(d$fatalities ~ instrumented.trt) # Second stage
+summary(reg2)
+

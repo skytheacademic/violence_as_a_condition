@@ -185,67 +185,14 @@ d = as.data.frame(b) # convert to dataframe
 d = d %>%
   select(-c(prio.grid, xcoord, ycoord, col, row, coords.x1, coords.x2))
 
+date = rep(ymd("2021-11-01"), nrow(d))
+d$score = date - d$event_date
+d$score = as.numeric(d$score)
+d$score = d$score*(-1)
+d$score[d$score < 1] = 0
+d$score = log(d$score + 1)
 
 #### Export Data ####
 write.csv(d, "./data/Kunkel-Ellis-final.csv", row.names=FALSE)
 
 
-#### RDD ####
-date = rep(ymd("2021-11-01"), nrow(d))
-d$score = date - d$event_date
-d$score = as.numeric(d$score)
-#Use the MSE-optimal bandwidth to compute the treatment effect using a triangular kernel.
-h = rdbwselect(d$death, d$score)$bws[1]
-h     
-
-d$kweights = kernelwts(d$score, 0, bw = h, kernel = "triangular")
-sum(d$kweights!=0 & !is.na(d$death))
-plot(d$score,d$kweights)
-
-reg1 = lm(death ~ t_ind + score + t_ind*score, weights = kweights, data = d)
-summary(reg1)
-
-#Provide an RD plot illustrating the treatment effect
-rdplot(y = d$death, x = d$score,  h = h, nbins = 100, subset = -h <= d$score & d$score <= h, 
-       binselect="esmv", kernel="triangular", p=1, title = "", 
-       y.label = "", x.label = "")
-
-summary(rdrobust(d$death,d$score,all=TRUE))
-
-# Density plot to examine sorting
-DCdensity(d$score[abs(d$score)<h],0)
-# big gaps are bad here, and show evidence of sorting
-
-
-
-
-
-#### Plot of treatment by admin? ####
-# group only by admin to see which units were ever treated
-d.ag.test = d %>%
-  group_by(admin3) %>%
-  summarize(t_ind = sum(t_ind))
-d.ag.test$t_ind[d.ag.test$t_ind>0] = 1
-table(d.ag.test$t_ind)
-# we have 46 adm3 where Wagner was never present, and 96 where they were
-
-# group by admin3 and treatment, then left_join(date,d, by = "date")
-table(d$event_date)
-d.ag = d %>%
-  group_by(admin3, event_date, t_ind) %>%
-  summarize(death = (death), fatalities = sum(fatalities), battle = sum(battle),
-            remote = sum(remote), protest = sum(protest), riot = sum(riot), 
-            str_d = sum(str_d), vac = sum(vac))
-# need to verify that this^^^ worked correctly #
-
-
-
-# this could be missing days when Wagner committed violence but another violent event happened 
-# that wasn't "treated". Need to solve later
-
-
-date = seq.Date(from = as.Date("2018-04-08"), to = as.Date("2022-08-10"), by = 1) %>%
-  as.data.frame()
-names(date)[1] = "date" # rename for merging
-
-a = full_join(d, date, by = c("event_date" = "date")) 
