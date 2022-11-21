@@ -12,6 +12,25 @@ a$event_date = ymd(a$event_date)
 a$wagner = "State Violence"
 a$wagner[a$t_ind == 1] = "Wagner"
 
+#### Run analyses, put in table #####
+#### Analyses with binary instrument ####
+first.stage = lm(t_ind ~ iv, data = a)
+instrumented.trt = first.stage$fitted # Generate fitted values
+reg1 <- lm(a$death ~ instrumented.trt + a$fatalities.lag + a$gold + a$diam) # Second stage
+summary(reg1)
+reg2 <- lm(a$fatalities ~ instrumented.trt + a$fatalities.lag + a$gold + a$diam) # Second stage
+summary(reg2)
+
+first.stage.1 = lm(t_ind ~ score, data = a)
+instrumented.trt = first.stage.1$fitted # Generate fitted values
+reg1 <- lm(a$death ~ instrumented.trt + a$fatalities.lag + a$gold + a$diam) # Second stage
+summary(reg1)
+reg2 <- lm(a$fatalities ~ instrumented.trt + a$fatalities.lag + a$gold + a$diam) # Second stage
+summary(reg2)
+
+# need to write this again
+stargazer()
+
 #### Read in map data ####
 car0 = st_read(dsn = "./data/gadm/caf", 
               layer = "gadm40_CAF_0", 
