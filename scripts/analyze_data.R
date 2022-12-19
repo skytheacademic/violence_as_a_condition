@@ -5,8 +5,8 @@
 library(tidyverse); library(lubridate); library(stargazer)
 options(scipen = 999)
 setwd("../")
-a = read.csv("./data/Kunkel-Ellis-final.csv")
-a$event_date = ymd(a$event_date)
+a = read.csv("./data/Kunkel-Ellis-final.csv") %>%
+  mutate(event_date = ymd(event_date))
 
 
 
@@ -44,3 +44,31 @@ stargazer(reg0, reg00,
 stargazer(reg1, reg3, reg2, reg4, 
           style = "ajps", covariate.labels = cov.labs, dep.var.labels =  c("Death (B)", "Fatalities (C)"))
 
+
+#### Appendix tables and figures ####
+
+# Print Instrument Tables #
+stargazer(first.stage, first.stage.1, style = "ajps", covariate.labels = c("Binary Instrument", "Continuous Instrument"),
+          dep.var.labels = "Treatment")
+
+
+#### OLD - TO DELETE ####
+
+# Instrument tests
+# X = as.matrix(subset(a, select = c(fatalities.lag, gold, diam)))
+# # Replace NAs w/ 0s
+# X <- X %>% 
+#   as.tibble() %>%
+#   mutate(across(fatalities.lag:diam, 
+#                 ~replace_na(.x, 0))) %>%
+#     as.matrix()
+# 
+# test1 = ivmodel(Y = a$death, D = a$t_ind, Z = a$iv, X = X)
+# summary(test1)
+# iv.diagnosis.plot(iv.diagnosis(Y = a$death, D = a$t_ind, Z = a$iv, X = X), bias.ratio = F)
+# test2 = ivmodel(Y = a$fatalities, D = a$t_ind, Z = a$iv, X = X)
+# summary(test2)
+# test3 = ivmodel(Y = a$death, D = a$t_ind, Z = a$score, X = X)
+# summary(test3)
+# test4 = ivmodel(Y = a$fatalities, D = a$t_ind, Z = a$score, X = X)
+# summary(test4)
