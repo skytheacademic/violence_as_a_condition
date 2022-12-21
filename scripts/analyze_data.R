@@ -52,6 +52,52 @@ stargazer(first.stage, first.stage.1, style = "ajps", covariate.labels = c("Bina
           dep.var.labels = "Treatment")
 
 
+# RDD Robustness check #
+library(rdrobust); library(rdd)
+date = rep(ymd("2021-11-01"), nrow(a))
+a$score_rdd = date - a$event_date
+a$score_rdd = as.numeric(a$score_rdd)
+#Use the MSE-optimal bandwidth to compute the treatment effect using a triangular kernel.
+h = rdbwselect(a$death, a$score_rdd)$bws[1]
+h1 = rdbwselect(a$fatalities, a$score_rdd)$bws[1]
+a$kweights = kernelwts(a$score_rdd, 0, bw = h, kernel = "triangular")
+a$kweights1 = kernelwts(a$score_rdd, 0, bw = h1, kernel = "triangular")
+
+pdf("./results/rdd_death.pdf")
+plot(a$score_rdd,a$kweights, xlab = "Score", ylab = "Weights")
+dev.off()
+
+pdf("./results/rdd_fatalities.pdf")
+plot(a$score_rdd,a$kweights1, xlab = "Score", ylab = "Weights")
+dev.off()
+
+####
+
+reg1 = lm(death ~ t_ind + score_rdd + t_ind*score_rdd, weights = kweights, data = a)
+reg2 = lm(fatalities ~ t_ind + score_rdd + t_ind*score_rdd, weights = kweights1, data = a)
+
+stargazer(reg1, reg2, style = "ajps", covariate.labels = c("Treatment", "Score", "Treatment * Score"),
+          dep.var.labels = c("Pr(Fatality)", "Total Fatalities"))
+
+#Provide an RD plot illustrating the treatment effect
+pdf("./results/rdplot_death.pdf")
+rdplot(y = a$death, x = a$score_rdd,  h = h, nbins = 100, subset = -h <= a$score_rdd & a$score_rdd <= h, 
+       binselect="esmv", kernel="triangular", p=1, title = "", 
+       y.label = "Pr(Fatality)", x.label = "")
+dev.off()
+pdf("./results/rdplot_fatalities.pdf")
+rdplot(y = a$fatalities, x = a$score_rdd,  h = h, nbins = 100, subset = -h <= a$score_rdd & a$score_rdd <= h, 
+       binselect="esmv", kernel="triangular", p=1, title = "", 
+       y.label = "Total Fatalities", x.label = "", y.lim = c(0,10))
+dev.off()
+
+# Density plot to examine sorting
+pdf("./results/rdd_density.pdf")
+DCdensity(a$score_rdd[abs(a$score_rdd)<h],0)
+dev.off()
+# big gaps are bad here, and show evidence of sorting
+
+
 #### OLD - TO DELETE ####
 
 # Instrument tests
