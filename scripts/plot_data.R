@@ -81,9 +81,9 @@ ggplot() +
   xlim(bbox_car[1], bbox_car[3]) + ylim(bbox_car[2], bbox_car[4]) + theme_void() +
   theme(plot.margin = unit(c(0,0,0,0), "cm"))
 
-# plot violence since 2021 when Wagner starts ramping up operations #
-a.wg = subset(a, wagner == "Wagner" & event_date >"2020-12-31")
-a.st = subset(a, wagner == "State Violence" & event_date >"2020-12-31")
+# plot violence by group #
+a.wg = subset(a, wagner == "Wagner")
+a.st = subset(a, wagner == "State Violence")
 dsc.1 =
   ggplot() + geom_sf(aes(geometry = car0$geometry), alpha = 0.7,fill = "white") +
   geom_sf(aes(geometry = car2$geometry), alpha = 0) +
@@ -198,10 +198,10 @@ library(viridis)  # scale_fill_viridis
 library(hrbrthemes) # theme_ipsum
 
 
-round(mean(a$fatalities[a$iv == 0 & a$t_ind == 1]), digits = 2)
-round(mean(a$fatalities[a$iv == 1 & a$t_ind == 1]), digits = 2)
-round(mean(a$fatalities[a$iv == 0 & a$t_ind == 0]), digits = 2)
-round(mean(a$fatalities[a$iv == 1 & a$t_ind == 0]), digits = 2)
+round(mean(a$fatalities[a$iv == 0 & a$t_ind == 1 & a$fatalities > 0]), digits = 2)
+round(mean(a$fatalities[a$iv == 1 & a$t_ind == 1 & a$fatalities > 0]), digits = 2)
+round(mean(a$fatalities[a$iv == 0 & a$t_ind == 0 & a$fatalities > 0]), digits = 2)
+round(mean(a$fatalities[a$iv == 1 & a$t_ind == 0 & a$fatalities > 0]), digits = 2)
 
 
 
@@ -219,22 +219,23 @@ ggplot(a, aes(x = `fatalities`, y = `act`, fill = stat(x))) +
   #  scale_fill_viridis(name = "fatalities", option = "e") +
   xlim(-1.75,26) + labs(title = 'Violence in the CAR, pre- and post-Ukraine') +
   theme_ipsum() + ylab("") +
-  annotate(geom="text", x=21.5, y=4.5, label= "bar(x)", color="black", parse=T) +
-  annotate(geom="text", x=23.5, y=4.5, label= "= 2.82", color="black") +
-  annotate(geom="text", x=23.5, y=3.5, label="   5.24", color="black") +
-  annotate(geom="text", x=23.5, y=2.5, label="   1.61", color="black") +
-  annotate(geom="text", x=23.5, y=1.5, label="   1.86", color="black") +
+  annotate(geom="text", x=20.5, y=4.5, label= "bar(x)", color="black", parse=T) +
+  annotate(geom="text", x=23.5, y=4.5, label= "= 5.89", color="black") +
+  annotate(geom="text", x=23.5, y=3.5, label="   9.07", color="black") +
+  annotate(geom="text", x=23.5, y=2.5, label="   2.42", color="black") +
+  annotate(geom="text", x=23.5, y=1.5, label="   1.74", color="black") +
   theme(plot.title = element_text(family="Times"), legend.position="none", panel.spacing = unit(0.1, "lines"), 
         strip.text.x = element_text(size = 8), 
-        axis.title.x = element_text(size =12, hjust = 0.4))
+        axis.title.x = element_text(size =12, hjust = 0.4)) +
+  xlab("Fatalities")
 dev.off()
 
 
 
 #### scatter plot of violence since 2021-11-01 #####
 rm(list=ls())
-a = read.csv("./data/Kunkel-Ellis-final.csv")
-a$event_date = ymd(a$event_date)
+a = read.csv("./data/Kunkel-Ellis-final.csv") %>%
+  mutate(event_date = ymd(event_date))
 a$wagner = "State"
 a$wagner[a$t_ind == 1] = "Wagner"
 a$event_date <- floor_date(a$event_date, "week")
@@ -336,6 +337,13 @@ summary(reg1)
 reg2 <- glm(a$fatalities ~ instrumented.trt + a$fatalities.lag, family = negative.binomial(theta = 1)) # Second stage
 summary(reg2)
 
+
+
+
+
+#### OLD - TO DELETE ####
+
+
 # library(AER)
 # summary(ivreg(fatalities ~ t_ind + fatalities.lag | iv, data = a))
 # 
@@ -346,24 +354,24 @@ summary(reg2)
 
 
 #### Odds Ratios Plots ####
-reg1.cf = exp(reg2$coefficients) %>%
-  as.data.frame()
-reg1.ci = exp(confint(reg2)) %>%
-  as.data.frame()
-reg1.cf = cbind(reg1.cf, reg1.ci)
-names(reg1.cf)[1] = "fatalities"
-names(reg1.cf)[2] = "ci_low"
-names(reg1.cf)[3] = "ci_high"
-reg1.cf$row_names = row.names(reg1.cf)
-y_labs = rev(c("Wagner Violence", "Fatalities Lag","State Violence (Intercept)"))
-level_order = rev(c("Fatalities", "a$fatalities.lag", "(Intercept)"))
-pdf("./results/or_death.pdf")
-ggplot(reg1.cf, aes(y = factor(row_names, level = level_order), x = fatalities)) + 
-  geom_vline(aes(xintercept = 1), size = .15, linetype = "dashed") + 
-  geom_errorbarh(aes(xmax = ci_high, xmin = ci_low), size = .5, height = 
-                   .15, color = "gray50") + geom_point(size = 3, color = "#A52A2A") +
-  theme_pubclean() + scale_y_discrete(labels = y_labs) + ylab("") +
-  scale_x_continuous(limits = c(0,31), breaks = c(0,1,10,30)) +
-  theme(plot.title = element_text(size = 18)) +
-  xlab("Odds ratio") + ggtitle("Wagner v. State Violence Risk of Death by Actor")
-dev.off()
+# reg1.cf = exp(reg2$coefficients) %>%
+#   as.data.frame()
+# reg1.ci = exp(confint(reg2)) %>%
+#   as.data.frame()
+# reg1.cf = cbind(reg1.cf, reg1.ci)
+# names(reg1.cf)[1] = "fatalities"
+# names(reg1.cf)[2] = "ci_low"
+# names(reg1.cf)[3] = "ci_high"
+# reg1.cf$row_names = row.names(reg1.cf)
+# y_labs = rev(c("Wagner Violence", "Fatalities Lag","State Violence (Intercept)"))
+# level_order = rev(c("Fatalities", "a$fatalities.lag", "(Intercept)"))
+# pdf("./results/or_death.pdf")
+# ggplot(reg1.cf, aes(y = factor(row_names, level = level_order), x = fatalities)) + 
+#   geom_vline(aes(xintercept = 1), size = .15, linetype = "dashed") + 
+#   geom_errorbarh(aes(xmax = ci_high, xmin = ci_low), size = .5, height = 
+#                    .15, color = "gray50") + geom_point(size = 3, color = "#A52A2A") +
+#   theme_pubclean() + scale_y_discrete(labels = y_labs) + ylab("") +
+#   scale_x_continuous(limits = c(0,31), breaks = c(0,1,10,30)) +
+#   theme(plot.title = element_text(size = 18)) +
+#   xlab("Odds ratio") + ggtitle("Wagner v. State Violence Risk of Death by Actor")
+# dev.off()
