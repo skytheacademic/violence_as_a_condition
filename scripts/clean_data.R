@@ -6,7 +6,7 @@ options(scipen = 999) # turn off scientific notation
 
 #### Clean Data ####
 # load data #
-d = read.csv("./data/acled/1900-01-01-2022-10-25-Central_African_Republic.csv") %>%
+d = read.csv("./data/acled/1900-01-01-2022-12-10-Central_African_Republic.csv") %>%
   select(-c(iso, event_id_cnty, event_id_no_cnty, 
             region, source, source_scale, timestamp))
 
@@ -22,10 +22,18 @@ d = d %>%
   rowwise() %>%
   mutate(t_ind = +any(str_detect(across(.cols = everything()), 
                                   regex("Wagner", ignore_case = TRUE)))) %>%
+  filter(inter1 == 1 | inter1 == 3 | inter1 == 7 | inter1 == 8 |
+           inter2 == 1 | inter2 == 3 | inter2 == 7 | inter2 == 8) %>%
+  mutate(event_date = dmy(event_date)) %>%
   as.data.frame()
+
+#subsetting by times it was possible to receive the Wagner "treatment"
+min(d$event_date[d$t_ind == 1]) # establish first time period to receive "treatment"
+# "2018-04-08"
+d = subset(d, d$event_date > "2018-04-07") # subset to all data after 2018-04-07
+range(d$event_date) # verify it worked
+
 table(d$t_ind)
-d = subset(d, inter1 == 1 | inter1 == 3 | inter1 == 7 | inter1 == 8 |
-             inter2 == 1 | inter2 == 3 | inter2 == 7 | inter2 == 8)
 
 d = d[!(d$inter1 ==2 & d$inter2 == 3), ] # drop data where only militia and rebels present
 d = d[!(d$inter1 ==2 & d$inter2 == 7), ] # drop data where only rebels and militia present
@@ -38,15 +46,7 @@ d = d[!(d$inter1 ==4 & d$inter2 == 7), ] # drop data where militias attack civil
 d = d[!(d$inter1 ==5 & d$inter2 == 7), ] # drop data where rioters attack civilians
 d = d[!(d$inter1 ==7 & d$inter2 == 0), ] # drop data where civilians only are present
 d = d[!(d$inter1 ==8 & d$inter2 == 0), ] # drop data on external forces movement
-
-# change date to date-time object
-d$event_date = dmy(d$event_date) 
-
-# expand the data to cover all time periods #
-min(d$event_date[d$t_ind == 1]) # establish first time period to receive "treatment"
-# "2018-04-08"
-d = subset(d, d$event_date > "2018-04-07") # subset to all data after 2018-04-07
-range(d$event_date) # verify it worked
+d = d[!(d$event_type == "Battles"), ] # drop data on battles
 
 
 # make dependent variable of death
@@ -54,38 +54,23 @@ d$death = 0
 d$death[d$fatalities > 0] = 1
 table(d$death)
 
-# make dependent variables of types of violence
-table(d$event_type)
-d$battle = 0
-d$battle[d$event_type == "Battles"] = 1
-d$remote = 0
-d$remote[d$event_type == "Explosions/Remote violence"] = 1
-d$protest = 0
-d$protest[d$event_type == "Protests"] = 1
-d$riot = 0
-d$riot[d$event_type == "Riots"] = 1
-d$str_d = 0
-d$str_d[d$sub_event_type == "Arrests" | d$sub_event_type == "Looting/property destruction"] = 1
-d$vac = 0
-d$vac[d$event_type == "Violence against civilians"] = 1
-
 #### Instrumental variable ####
 # make the instrument
 table(d$t_ind[d$event_date> "2021-11-01"])
 table(d$t_ind[d$event_date< "2021-11-01"])
 t = subset(d, t_ind == 1)
-mean(t$death[t$event_date > "2021-11-01"])
-mean(t$death[t$event_date < "2021-11-01"])
+mean(t$fatalities[t$event_date > "2021-11-01"])
+mean(t$fatalities[t$event_date < "2021-11-01"])
 d$iv = 0
 d$iv[d$event_date> "2021-11-01"] = 1
 
 #### Creating/merging control variables ####
-a = read.csv("./data/acled/1900-01-01-2022-10-25-Central_African_Republic.csv") %>%
+a = read.csv("./data/acled/1900-01-01-2022-12-10-Central_African_Republic.csv") %>%
   select(-c(iso, event_id_cnty, event_id_no_cnty, 
-            region, source, source_scale, timestamp))
-a = subset(a, inter1 == 2 | inter1 == 3 | inter1 == 4) # subset to any events by militia or rebels
-a$event = 1 # make this for sum of violent events
-a$event_date = dmy(a$event_date) 
+            region, source, source_scale, timestamp)) %>%
+  filter(inter1 == 2 | inter1 == 3 | inter1 == 4) %>% # subset to any events by militia or rebels
+  mutate(event = 1) %>% # make this for sum of violent events
+  mutate(event_date = dmy(event_date)) 
 
 # create sum of events in the past 30 days #
 # group by month and year
