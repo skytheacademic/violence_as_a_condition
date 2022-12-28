@@ -210,9 +210,8 @@ a$act[a$iv == 0 & a$t_ind == 1] = "Wagner, Pre-Ukraine"
 a$act[a$iv == 1 & a$t_ind == 1] = "Wagner, Post-Ukraine"
 a$act[a$iv == 0 & a$t_ind == 0] = "State, Pre-Ukraine"
 a$act[a$iv == 1 & a$t_ind == 0] = "State, Post-Ukraine"
-pdf("./results/violence_joyplot.pdf")
-svg("./results/violence_joyplot.svg")
-ggplot(a, aes(x = `fatalities`, y = `act`, fill = stat(x))) +
+# svg("./results/violence_joyplot.svg")
+joy = ggplot(a, aes(x = `fatalities`, y = `act`, fill = stat(x))) +
   geom_density_ridges_gradient(scale = 1.5, rel_min_height = 0.01, alpha = 0.5) +
   scale_fill_gradient(low = "#ff3b3b", high = "#000000", space = "Lab",
                       guide = "colourbar", aesthetics = "fill") +
@@ -228,6 +227,8 @@ ggplot(a, aes(x = `fatalities`, y = `act`, fill = stat(x))) +
         strip.text.x = element_text(size = 8), 
         axis.title.x = element_text(size =12, hjust = 0.4)) +
   xlab("Fatalities")
+pdf("./results/violence_joyplot.pdf")
+joy
 dev.off()
 
 
@@ -235,16 +236,15 @@ dev.off()
 #### scatter plot of violence since 2021-11-01 #####
 rm(list=ls())
 a = read.csv("./data/Kunkel-Ellis-final.csv") %>%
-  mutate(event_date = ymd(event_date))
+  mutate(event_date = ymd(event_date)) %>%
+  mutate(event_date = floor_date(event_date, "week"))
 a$wagner = "State"
 a$wagner[a$t_ind == 1] = "Wagner"
-a$event_date <- floor_date(a$event_date, "week")
 date = rep(ymd("2021-11-01"), nrow(a))
 a$score = date - a$event_date
-a$score = as.numeric(a$score)
-a$score = a$score*(-1)
-a = subset(a, score > -500)
 d = a %>%
+  mutate(score = score*(-1)) %>%
+  filter(score > -500) %>%
   group_by(score, wagner) %>%
   summarize(death = mean(death), fatalities = sum(fatalities)) %>%
   as.data.frame()

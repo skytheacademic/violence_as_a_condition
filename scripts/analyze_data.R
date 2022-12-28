@@ -39,10 +39,10 @@ summary(reg4)
 #### Make into table ####
 cov.labs = c("Treatment", "Fatalities Lag", "Gold", "Diamonds")
 stargazer(reg0, reg00, 
-          style = "ajps", covariate.labels = cov.labs, dep.var.labels =  c("Death (B)", "Fatalities (C)"))
+          style = "apsr", covariate.labels = cov.labs, dep.var.labels =  c("Death (B)", "Fatalities (C)"))
 
 stargazer(reg1, reg3, reg2, reg4, 
-          style = "ajps", covariate.labels = cov.labs, dep.var.labels =  c("Death (B)", "Fatalities (C)"))
+          style = "apsr", covariate.labels = cov.labs, dep.var.labels =  c("Death (B)", "Fatalities (C)"))
 
 
 #### Appendix tables and figures ####
@@ -76,7 +76,7 @@ dev.off()
 reg1 = lm(death ~ t_ind + score_rdd + t_ind*score_rdd, weights = kweights, data = a)
 reg2 = lm(fatalities ~ t_ind + score_rdd + t_ind*score_rdd, weights = kweights1, data = a)
 
-stargazer(reg1, reg2, style = "ajps", covariate.labels = c("Treatment", "Score", "Treatment * Score"),
+stargazer(reg1, reg2, style = "apsr", covariate.labels = c("Treatment", "Score", "Treatment * Score"),
           dep.var.labels = c("Pr(Fatality)", "Total Fatalities"))
 
 #Provide an RD plot illustrating the treatment effect
