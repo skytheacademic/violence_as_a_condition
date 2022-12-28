@@ -227,7 +227,8 @@ joy = ggplot(a, aes(x = `fatalities`, y = `act`, fill = stat(x))) +
         strip.text.x = element_text(size = 8), 
         axis.title.x = element_text(size =12, hjust = 0.4)) +
   xlab("Fatalities")
-pdf("./results/violence_joyplot.pdf")
+
+cairo_pdf("./results/violence_joyplot.pdf", width = 7, height = 5)
 joy
 dev.off()
 
