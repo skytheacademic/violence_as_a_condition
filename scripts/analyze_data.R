@@ -48,7 +48,7 @@ stargazer(reg1, reg3, reg2, reg4,
 #### Appendix tables and figures ####
 
 # Print Instrument Tables #
-stargazer(first.stage, first.stage.1, style = "ajps", covariate.labels = c("Binary Instrument", "Continuous Instrument"),
+stargazer(first.stage, first.stage.1, style = "apsr", covariate.labels = c("Binary Instrument", "Continuous Instrument"),
           dep.var.labels = "Treatment")
 
 
