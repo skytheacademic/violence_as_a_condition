@@ -2,7 +2,7 @@
 # Sky Kunkel #
 
 #### Set Libraries, read in data ####
-library(tidyverse); library(lubridate); library(stargazer)
+library(tidyverse); library(lubridate); library(stargazer); library(MASS)
 options(scipen = 999)
 setwd("../")
 a = read.csv("./data/Kunkel-Ellis-final.csv") %>%
@@ -11,8 +11,8 @@ a = read.csv("./data/Kunkel-Ellis-final.csv") %>%
 
 
 #### Naive analyses ####
-reg0 = lm(death ~ t_ind + fatalities.lag + gold + diam, data = a)
-reg00 <- lm(fatalities ~ t_ind + fatalities.lag + gold + diam, data = a)
+reg0 = glm(death ~ t_ind + fatalities.lag + gold + diam, data = a, family = negative.binomial(theta = 1))
+reg00 <- glm(fatalities ~ t_ind + fatalities.lag + gold + diam, data = a, family = negative.binomial(theta = 1))
 summary(reg0)
 summary(reg00)
 
@@ -38,18 +38,22 @@ summary(reg4)
 
 #### Make into table ####
 cov.labs = c("Treatment", "Fatalities Lag", "Gold", "Diamonds")
-stargazer(reg0, reg00, 
-          style = "apsr", covariate.labels = cov.labs, dep.var.labels =  c("Death (B)", "Fatalities (C)"))
+stargazer(reg0, reg00, apply.coef = exp, t.auto=F, p.auto=F,
+          style = "apsr", covariate.labels = cov.labs, dep.var.labels =  c("Death (B)", "Fatalities (C)"),
+          notes = "Negative Binomial Logit Models transformed into odds ratios. (B) = Binary Outcome, (C) = Count Outcome.", 
+          out = "./results/logit.txt")
 
 stargazer(reg1, reg3, reg2, reg4, 
-          style = "apsr", covariate.labels = cov.labs, dep.var.labels =  c("Death (B)", "Fatalities (C)"))
+          style = "apsr", covariate.labels = cov.labs, dep.var.labels =  c("Death (B)", "Fatalities (C)"),
+          notes = "2-Stage Least Squares Regression. (B) = Binary Outcome, (C) = Count Outcome.",
+          out = "./results/2sls.txt")
 
 
 #### Appendix tables and figures ####
 
 # Print Instrument Tables #
 stargazer(first.stage, first.stage.1, style = "apsr", covariate.labels = c("Binary Instrument", "Continuous Instrument"),
-          dep.var.labels = "Treatment")
+          dep.var.labels = "Treatment", out = "./results/st_1.txt")
 
 
 # RDD Robustness check #
@@ -77,7 +81,8 @@ reg1 = lm(death ~ t_ind + score_rdd + t_ind*score_rdd, weights = kweights, data 
 reg2 = lm(fatalities ~ t_ind + score_rdd + t_ind*score_rdd, weights = kweights1, data = a)
 
 stargazer(reg1, reg2, style = "apsr", covariate.labels = c("Treatment", "Score", "Treatment * Score"),
-          dep.var.labels = c("Pr(Fatality)", "Total Fatalities"))
+          dep.var.labels = c("Pr(Fatality)", "Total Fatalities"), notes = "Regression Discontinuity Design output.",
+          out = "./results/rdd.txt")
 
 #Provide an RD plot illustrating the treatment effect
 pdf("./results/rdplot_death.pdf")
