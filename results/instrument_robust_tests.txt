@@ -1,0 +1,13 @@
+\begin{table}[!htbp] \centering
+\begin{tabular}{lccccc}
+\hline
+Instrument & \(F_{Eff}\) & tF & AR (Binary) & AR (Count) \\
+\hline
+Dose   & 2.064 & 0.431 & 8.432 & 1.965 \\
+Binary & 3.341 & 0.535 & 9.271 & 1.874 \\
+\hline
+\end{tabular}
+\caption{Reported \textcite{F}-statistics recommended by \textcite{lal_how_2024}. 
+\textit{Note: AR is reported separately for each outcome because the AR statistic is calculated from the reduced form of the outcome on the instrument and thus varies between binary and count models.}}
+\label{tab:instrument_robust_tests}
+\end{table}
