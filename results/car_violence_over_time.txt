@@ -1,0 +1,10 @@
+
+Event-Level Fatalities by Event Type and Period, CAR. Note: Battle fatalities are included for context, but are not otherwise present in any statistical models.
+==========================================================
+Event type           # of events Mean Median Zero-fatality
+----------------------------------------------------------
+OSV (1997--2022)        2,723    2.88   1        0.47     
+OSV (2018--2022)        1,088    1.99   0        0.54     
+Battles (1997--2022)    1,863    4.43   1        0.47     
+Battles (2018--2022)     730     3.22   0        0.51     
+----------------------------------------------------------
