@@ -1,10 +1,13 @@
 # Sky Kunkel #
 # Violence as a Condition: Cleaning Data #
 library(tidyverse); library(lubridate); library(sf); library(sp); library(spatialEco)
-setwd("../")
 options(scipen = 999) # turn off scientific notation
 
 #### Clean Data ####
+## clear environment, set up working directory ##
+rm(list = ls())
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set to source file location
+setwd("../")
 # load data #
 d = read.csv("./data/acled/1900-01-01-2022-12-10-Central_African_Republic.csv") %>%
   select(-c(iso, event_id_cnty, event_id_no_cnty, 
