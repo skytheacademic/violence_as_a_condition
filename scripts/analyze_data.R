@@ -3,8 +3,9 @@
 ## Sky Kunkel ##
 ## Personal site: https://www.skytheacademic.com
 ## Github repos: https://github.com/skytheacademic
-# This script contains all the code need to reproduce every model, table, and figure present 
-# in the manuscript, from Section 5 "Analysis", onwards. 
+# This script contains all the code need to reproduce every model, table, and figure 
+# in the manuscript directly related to statistical models, from Section 5 "Analysis", 
+# onwards. The code for descriptive statistics and figures can be found in "plot_data.R"
 
 #### Set Libraries, read in data ####
 library(tidyverse); library(lubridate); library(stargazer)
