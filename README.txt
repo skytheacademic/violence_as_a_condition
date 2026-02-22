@@ -1,3 +1,14 @@
+"./scripts"
+- clean_data.R: Merges and preprocesses PRIO grid and ACLED conflict event datasets into a merged, event-level dataset.
+
+- analyze_data.R: Executes all stastical models and figures in the paper and appendix.
+
+- plot_data.R: Generates tables and figures not related to the statistical analysis.
+
+"./results"
+- provides the plots, figures, tables, and all results in the paper.
+
+"./data"
 
 ACLED data:
 	- Contains data on armed conflict and violence.
